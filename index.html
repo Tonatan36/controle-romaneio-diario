@@ -3,77 +3,184 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Romaneio de Entrega</title>
+  <title>Controle de Romaneio Diário</title>
   <style>
-    * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
-    body { margin: 0; padding: 20px; background: #f4f6f8; color: #1f2937; }
-    .container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    
-    .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-    h1 { margin: 0; font-size: 1.5rem; }
+    :root {
+      --bg-body: #f4f6f8;
+      --bg-card: #ffffff;
+      --bg-subtle: #f8fafc;
+      --bg-input: #ffffff;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --border: #d1d5db;
+      --border-light: #e5e7eb;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --dark-btn: #0f172a;
+      --success: #15803d;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --secondary-bg: #e5e7eb;
+      --secondary-text: #111827;
+      --row-editing: #fef3c7;
+    }
 
-    .tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; flex-wrap: wrap; }
-    .tab-btn { padding: 8px 16px; border: 1px solid #d1d5db; background: #f9fafb; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    .tab-btn.active { background: #111827; color: #fff; border-color: #111827; }
+    body.dark {
+      --bg-body: #0f172a;
+      --bg-card: #1e293b;
+      --bg-subtle: #0f172a;
+      --bg-input: #0f172a;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --border-light: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --dark-btn: #334155;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --secondary-bg: #334155;
+      --secondary-text: #f1f5f9;
+      --row-editing: #422006;
+    }
+
+    * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
+    body { margin: 0; padding: 16px; background: var(--bg-body); color: var(--text-main); transition: background 0.2s, color 0.2s; }
+    .container { max-width: 1180px; margin: 0 auto; background: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+
+    .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .title-area { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    h1 { margin: 0; font-size: 1.45rem; }
+
+    .status-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .badge { font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+    .badge-saved { background: #dcfce7; color: #166534; }
+    .badge-backup-ok { background: #e0f2fe; color: #075985; }
+    .badge-backup-warn { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+
+    .top-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 1px solid var(--border-light); padding-bottom: 10px; flex-wrap: wrap; }
+    .tab-btn { padding: 10px 16px; border: 1px solid var(--border); background: var(--bg-subtle); color: var(--text-main); border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.92rem; }
+    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 12px; margin-bottom: 14px; }
     .field { display: flex; flex-direction: column; gap: 4px; }
-    label { font-size: 0.85rem; font-weight: 600; }
-    input, select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; }
-    
-    /* Força exibição em maiúsculo enquanto digita */
+    label { font-size: 0.84rem; font-weight: 600; color: var(--text-main); }
+    input, select { padding: 10px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-main); border-radius: 6px; font-size: 16px; width: 100%; }
+    input:focus, select:focus { outline: 2px solid var(--primary); border-color: var(--primary); }
+
     input[type="text"] { text-transform: uppercase; }
-    input[type="text"]::placeholder { text-transform: none; }
+    input[type="text"]::placeholder { text-transform: none; color: var(--text-muted); }
 
-    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
-    button.primary { background: #2563eb; color: #fff; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    button.warning { background: #d97706; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
-    button.print-today { background: #0f172a; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 700; }
-    button.success { background: #15803d; color: #fff; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    button.danger { background: #dc2626; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
-    button.secondary { background: #e5e7eb; color: #111827; border: none; padding: 9px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .input-invalid { border: 2px solid var(--danger) !important; background: #fef2f2 !important; color: #111827 !important; }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; font-size: 0.9rem; }
-    th { background: #f8fafc; font-weight: 700; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+    button { min-height: 40px; }
+    button.primary { background: var(--primary); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    button.primary:hover { background: var(--primary-hover); }
+    button.warning { background: var(--warning); color: #fff; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; min-height: 32px; font-weight: 600; }
+    button.print-today { background: var(--dark-btn); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 700; }
+    button.success { background: var(--success); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    button.danger { background: var(--danger); color: #fff; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; min-height: 32px; font-weight: 600; }
+    button.secondary { background: var(--secondary-bg); color: var(--secondary-text); border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+
+    .toolbar-busca { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; padding-top: 10px; border-top: 1px solid var(--border-light); }
+    .busca-box { flex: 1; min-width: 240px; }
+    .atalhos-dica { font-size: 0.78rem; color: var(--text-muted); }
+
+    .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px; }
+    table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    th, td { border: 1px solid var(--border-light); padding: 8px 10px; text-align: left; font-size: 0.9rem; }
+    th { background: var(--bg-subtle); font-weight: 700; white-space: nowrap; }
+    tr.editing-row { background: var(--row-editing); }
+    .inline-input { padding: 6px 8px; font-size: 0.9rem; min-width: 90px; }
     .num { text-align: right; white-space: nowrap; }
     .acoes-celula { display: flex; gap: 6px; white-space: nowrap; }
-    .summary { margin-top: 12px; display: flex; justify-content: space-between; font-weight: 700; font-size: 1rem; }
-    .feedback { font-size: 0.88rem; color: #15803d; font-weight: 600; }
-    .backup-box { margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
-    .print-header { display: none; margin-bottom: 14px; }
+    .summary { margin-top: 14px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-weight: 700; font-size: 1rem; }
+    .feedback { font-size: 0.88rem; color: var(--success); font-weight: 700; }
+
+    .col-selector { display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 12px; background: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: 6px; margin-bottom: 14px; align-items: center; }
+    .col-selector label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; }
+    .col-selector input[type="checkbox"] { width: 16px; height: 16px; }
+
+    .backup-box { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-light); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    .print-header { display: none; margin-bottom: 14px; border-bottom: 2px solid #000; padding-bottom: 8px; }
+    .print-header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .print-company { font-size: 1.25rem; font-weight: 800; text-transform: uppercase; }
+    .print-meta { font-size: 0.85rem; margin-top: 4px; }
+
+    @media (max-width: 640px) {
+      body { padding: 8px; }
+      .container { padding: 14px; border-radius: 6px; }
+      h1 { font-size: 1.25rem; }
+      .top-actions { width: 100%; }
+      .top-actions button { flex: 1; }
+      .tabs { flex-direction: column; }
+      .tab-btn { width: 100%; text-align: left; }
+      .form-grid { grid-template-columns: 1fr; }
+      .actions button, .backup-box button { width: 100%; }
+      .summary { flex-direction: column; }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 12mm;
+      @bottom-right {
+        content: "Página " counter(page) " de " counter(pages);
+        font-size: 9pt;
+        font-family: Arial, sans-serif;
+      }
+    }
 
     @media print {
-      body { background: #fff; padding: 0; }
-      .container { box-shadow: none; max-width: 100%; padding: 0; }
-      .top-bar, .tabs, .no-print, button.danger, button.warning { display: none !important; }
+      body { background: #fff !important; color: #000 !important; padding: 0; }
+      .container { box-shadow: none; max-width: 100%; padding: 0; background: #fff !important; }
+      .top-bar, .tabs, .no-print, button { display: none !important; }
       .tab-panel { display: none !important; }
       #tab-impressao { display: block !important; }
-      .print-header { display: block; }
-      th, td { border: 1px solid #000; padding: 6px 8px; font-size: 0.85rem; }
+      .table-wrapper { overflow: visible; }
+      table { min-width: 100%; width: 100%; }
+      thead { display: table-header-group; }
+      tr { break-inside: avoid; page-break-inside: avoid; }
+      .print-header { display: block !important; }
+      th, td { border: 1px solid #000 !important; color: #000 !important; background: #fff !important; padding: 6px 8px; font-size: 0.85rem; }
+      th { background: #f1f5f9 !important; font-weight: 800; }
+      .summary { color: #000 !important; border-top: 1px solid #000; padding-top: 8px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="top-bar no-print">
-      <h1>Romaneio de Entrega</h1>
-      <button type="button" id="btn-imprimir-hoje-topo" class="print-today">🖨️ Imprimir o Dia (Hoje)</button>
+      <div class="title-area">
+        <h1>Romaneio de Entrega</h1>
+        <div class="status-badges">
+          <span id="badge-salvo" class="badge badge-saved" style="display: none;">✓ Salvo</span>
+          <span id="badge-backup" class="badge badge-backup-warn">Sem backup ainda</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button type="button" id="btn-tema" class="secondary" title="Alternar modo claro/escuro">🌙 Modo Escuro</button>
+        <button type="button" id="btn-imprimir-hoje-topo" class="print-today" title="Atalho: Ctrl + P">🖨️ Imprimir o Dia (Hoje)</button>
+      </div>
     </div>
 
     <div class="tabs no-print">
-      <button class="tab-btn active" data-tab="tab-cadastro">1. Lançar / Romaneio</button>
-      <button class="tab-btn" data-tab="tab-impressao">2. Impressão Diária</button>
-      <button class="tab-btn" data-tab="tab-excel">3. Exportar para Excel</button>
+      <button type="button" class="tab-btn active" data-tab="tab-cadastro">1. Lançar / Romaneio</button>
+      <button type="button" class="tab-btn" data-tab="tab-impressao">2. Impressão Diária</button>
+      <button type="button" class="tab-btn" data-tab="tab-excel">3. Exportar para Excel</button>
     </div>
 
     <!-- ABA 1: LANÇAMENTO -->
     <section id="tab-cadastro" class="tab-panel active">
-      <form id="form-romaneio">
+      <form id="form-romaneio" novalidate>
         <div class="form-grid">
           <div class="field">
             <label for="data">Data *</label>
@@ -90,11 +197,12 @@
           </div>
           <div class="field">
             <label for="cliente">Cliente *</label>
-            <input type="text" id="cliente" placeholder="Nome do cliente / obra" required />
+            <input type="text" id="cliente" list="lista-clientes" placeholder="Nome do cliente / obra" required />
+            <datalist id="lista-clientes"></datalist>
           </div>
           <div class="field">
-            <label for="valor">Valor da compra (R$) *</label>
-            <input type="number" id="valor" step="0.01" min="0" placeholder="0,00" required />
+            <label for="valor">Valor da compra *</label>
+            <input type="text" id="valor" inputmode="numeric" placeholder="R$ 0,00" required />
           </div>
           <div class="field">
             <label for="observacao">Observação</label>
@@ -103,25 +211,37 @@
         </div>
         <div class="actions">
           <button type="submit" id="btn-salvar" class="primary">Adicionar ao romaneio</button>
-          <button type="button" id="btn-cancelar-edicao" class="secondary" style="display: none;">Cancelar edição</button>
+          <button type="button" id="btn-undo" class="secondary" style="display: none;">↩️ Desfazer última edição</button>
           <button type="button" id="btn-limpar-dia" class="secondary">Limpar lançamentos da data</button>
         </div>
       </form>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Motorista</th>
-            <th>Nº Pedido</th>
-            <th>Cliente</th>
-            <th class="num">Valor</th>
-            <th>Observação</th>
-            <th class="no-print">Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-cadastro"></tbody>
-      </table>
+      <div class="toolbar-busca no-print">
+        <div class="field busca-box">
+          <label for="busca-rapida">Buscar na data (pedido, cliente, motorista ou observação)</label>
+          <input type="text" id="busca-rapida" placeholder="Digite para filtrar... (Atalho: /)" />
+        </div>
+        <div class="atalhos-dica">
+          Atalhos: <strong>Alt+N</strong> Novo | <strong>Ctrl+P</strong> Imprimir dia | <strong>Ctrl+S</strong> Exportar/Salvar | <strong>/</strong> Buscar | <strong>Duplo clique</strong> na linha para editar
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Motorista</th>
+              <th>Nº Pedido</th>
+              <th>Cliente</th>
+              <th class="num">Valor</th>
+              <th>Observação</th>
+              <th class="no-print">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-cadastro"></tbody>
+        </table>
+      </div>
 
       <div class="summary">
         <span id="qtd-cadastro">Total de pedidos: 0</span>
@@ -132,6 +252,10 @@
     <!-- ABA 2: IMPRESSÃO DIÁRIA -->
     <section id="tab-impressao" class="tab-panel">
       <div class="form-grid no-print">
+        <div class="field">
+          <label for="nome-empresa">Nome da empresa no cabeçalho</label>
+          <input type="text" id="nome-empresa" placeholder="Ex.: AÇO FORTE - EXPEDIÇÃO" />
+        </div>
         <div class="field">
           <label for="filtro-data">Data do romaneio</label>
           <input type="date" id="filtro-data" />
@@ -151,23 +275,33 @@
       </div>
 
       <div class="print-header">
-        <h2 style="margin: 0 0 6px 0;">ROMANEIO DIÁRIO DE ENTREGA</h2>
-        <div id="cabecalho-impresso"></div>
+        <div class="print-header-top">
+          <div>
+            <div id="print-empresa-titulo" class="print-company">CONTROLE DE ROMANEIO DE ENTREGA</div>
+            <div id="cabecalho-impresso" class="print-meta"></div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: 700;">ROMANEIO DIÁRIO</div>
+            <div id="print-data-emissao" class="print-meta"></div>
+          </div>
+        </div>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Nº Pedido</th>
-            <th>Motorista</th>
-            <th>Cliente</th>
-            <th class="num">Valor</th>
-            <th>Observação</th>
-            <th>Assinatura / Conferência</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-impressao"></tbody>
-      </table>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Nº Pedido</th>
+              <th>Motorista</th>
+              <th>Cliente</th>
+              <th class="num">Valor</th>
+              <th>Observação</th>
+              <th>Assinatura / Conferência</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-impressao"></tbody>
+        </table>
+      </div>
 
       <div class="summary">
         <span id="qtd-impressao">Entregas no dia: 0</span>
@@ -182,6 +316,9 @@
           <label for="excel-periodo">Período para exportar</label>
           <select id="excel-periodo">
             <option value="dia">Somente a data selecionada</option>
+            <option value="semana">Semana atual (Dom a Sáb)</option>
+            <option value="mes">Mês atual</option>
+            <option value="intervalo">Intervalo personalizado</option>
             <option value="todos">Todos os registros salvos</option>
           </select>
         </div>
@@ -189,6 +326,38 @@
           <label for="excel-data">Data</label>
           <input type="date" id="excel-data" />
         </div>
+        <div class="field" id="campo-excel-inicio" style="display: none;">
+          <label for="excel-inicio">Data inicial</label>
+          <input type="date" id="excel-inicio" />
+        </div>
+        <div class="field" id="campo-excel-fim" style="display: none;">
+          <label for="excel-fim">Data final</label>
+          <input type="date" id="excel-fim" />
+        </div>
+        <div class="field">
+          <label for="excel-separador">Separador CSV</label>
+          <select id="excel-separador">
+            <option value=";">Ponto e vírgula (;) — Excel PT-BR</option>
+            <option value=",">Vírgula (,) — Padrão Internacional</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="excel-encoding">Codificação (Encoding)</label>
+          <select id="excel-encoding">
+            <option value="utf8-bom">UTF-8 com BOM (Acentos Excel)</option>
+            <option value="iso">ISO-8859-1 (Latin-1 Legado)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="col-selector" role="group" aria-label="Selecionar colunas para exportar">
+        <strong>Colunas:</strong>
+        <label><input type="checkbox" class="col-check" value="data" checked /> Data</label>
+        <label><input type="checkbox" class="col-check" value="motorista" checked /> Motorista</label>
+        <label><input type="checkbox" class="col-check" value="pedido" checked /> Nº Pedido</label>
+        <label><input type="checkbox" class="col-check" value="cliente" checked /> Cliente</label>
+        <label><input type="checkbox" class="col-check" value="valor" checked /> Valor</label>
+        <label><input type="checkbox" class="col-check" value="observacao" checked /> Observação</label>
       </div>
 
       <div class="actions">
@@ -197,19 +366,12 @@
         <span id="excel-feedback" class="feedback"></span>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Motorista</th>
-            <th>Nº Pedido</th>
-            <th>Cliente</th>
-            <th class="num">Valor (R$)</th>
-            <th>Observação</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-excel"></tbody>
-      </table>
+      <div class="table-wrapper">
+        <table>
+          <thead id="thead-excel"></thead>
+          <tbody id="tbody-excel"></tbody>
+        </table>
+      </div>
 
       <div class="summary">
         <span id="qtd-excel">Registros na prévia: 0</span>
@@ -217,17 +379,29 @@
       </div>
 
       <div class="backup-box">
-        <strong>Segurança:</strong>
+        <strong>Segurança e Backup:</strong>
         <button type="button" id="btn-backup-salvar" class="secondary">Salvar Backup (.json)</button>
         <button type="button" id="btn-backup-restaurar" class="secondary">Restaurar Backup</button>
-        <input type="file" id="input-backup-arquivo" accept=".json" style="display: none;" />
+        <input type="file" id="input-backup-arquivo" accept=".json" style="display: none;" aria-label="Selecionar arquivo de backup JSON" />
       </div>
     </section>
   </div>
 
   <script>
-    const STORAGE_KEY = 'romaneio_entregas_v1';
-    let idEmEdicao = null;
+    // ================= CONFIGURAÇÃO & ESTADO =================
+    const DB_NAME = 'RomaneioEntregasDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'entregas';
+    const LEGACY_STORAGE_KEY = 'romaneio_entregas_v1';
+    const META_LAST_BACKUP = 'romaneio_last_backup_ts';
+    const META_CHANGES_COUNT = 'romaneio_changes_since_backup';
+    const META_COMPANY_NAME = 'romaneio_company_name';
+    const META_DARK_MODE = 'romaneio_dark_mode';
+
+    let db = null;
+    let itensCache = [];
+    let inlineEditId = null;
+    let ultimoEstadoUndo = null;
 
     function obterDataHojeLocal() {
       const agora = new Date();
@@ -237,53 +411,239 @@
       return `${ano}-${mes}-${dia}`;
     }
 
+    function obterDataHoraAtualBR() {
+      const agora = new Date();
+      return agora.toLocaleString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
     const hoje = obterDataHojeLocal();
 
+    // Elementos principais
     const dataInput = document.getElementById('data');
     const motoristaInput = document.getElementById('motorista');
     const pedidoInput = document.getElementById('pedido');
     const clienteInput = document.getElementById('cliente');
     const valorInput = document.getElementById('valor');
     const observacaoInput = document.getElementById('observacao');
-    const btnSalvar = document.getElementById('btn-salvar');
-    const btnCancelarEdicao = document.getElementById('btn-cancelar-edicao');
+    const buscaRapidaInput = document.getElementById('busca-rapida');
+    const btnUndo = document.getElementById('btn-undo');
 
+    const nomeEmpresaInput = document.getElementById('nome-empresa');
     const filtroData = document.getElementById('filtro-data');
     const filtroMotorista = document.getElementById('filtro-motorista');
+
     const excelPeriodo = document.getElementById('excel-periodo');
     const excelData = document.getElementById('excel-data');
-    const campoExcelData = document.getElementById('campo-excel-data');
+    const excelInicio = document.getElementById('excel-inicio');
+    const excelFim = document.getElementById('excel-fim');
+    const excelSeparador = document.getElementById('excel-separador');
+    const excelEncoding = document.getElementById('excel-encoding');
 
     dataInput.value = hoje;
     filtroData.value = hoje;
     excelData.value = hoje;
+    excelInicio.value = hoje;
+    excelFim.value = hoje;
 
-    // Converte o valor real do campo para MAIÚSCULO enquanto digita (mantendo a posição do cursor)
-    [motoristaInput, pedidoInput, clienteInput, observacaoInput].forEach(campo => {
-      campo.addEventListener('input', function () {
-        const inicio = this.selectionStart;
-        const fim = this.selectionEnd;
-        this.value = this.value.toUpperCase();
-        this.setSelectionRange(inicio, fim);
-      });
+    nomeEmpresaInput.value = localStorage.getItem(META_COMPANY_NAME) || '';
+    nomeEmpresaInput.addEventListener('input', () => {
+      nomeEmpresaInput.value = nomeEmpresaInput.value.toUpperCase();
+      localStorage.setItem(META_COMPANY_NAME, nomeEmpresaInput.value);
+      renderizar();
     });
 
-    function carregarItens() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-      } catch {
-        return [];
-      }
+    // ================= MODO ESCURO =================
+    const btnTema = document.getElementById('btn-tema');
+    function aplicarTema(escuro) {
+      document.body.classList.toggle('dark', escuro);
+      btnTema.textContent = escuro ? '☀️ Modo Claro' : '🌙 Modo Escuro';
     }
+    aplicarTema(localStorage.getItem(META_DARK_MODE) === '1');
+    btnTema.addEventListener('click', () => {
+      const novoEstado = !document.body.classList.contains('dark');
+      localStorage.setItem(META_DARK_MODE, novoEstado ? '1' : '0');
+      aplicarTema(novoEstado);
+    });
 
-    function salvarItens(itens) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(itens));
-    }
-
+    // ================= MÁSCARA MONETÁRIA & MAIÚSCULO =================
     function formatarMoeda(valor) {
       return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
+    function aplicarMascaraMoedaInput(inputEl) {
+      const digitos = inputEl.value.replace(/\D/g, '');
+      if (!digitos) {
+        inputEl.value = '';
+        return;
+      }
+      const numero = parseInt(digitos, 10) / 100;
+      inputEl.value = numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function extrairValorMonetario(texto) {
+      if (typeof texto === 'number') return texto;
+      const limpo = String(texto || '').replace(/[^\d,-]/g, '').replace(',', '.');
+      const num = parseFloat(limpo);
+      return isNaN(num) ? 0 : num;
+    }
+
+    valorInput.addEventListener('input', () => {
+      valorInput.classList.remove('input-invalid');
+      aplicarMascaraMoedaInput(valorInput);
+    });
+
+    [motoristaInput, pedidoInput, clienteInput, observacaoInput, buscaRapidaInput].forEach(campo => {
+      campo.addEventListener('input', function () {
+        this.classList.remove('input-invalid');
+        const inicio = this.selectionStart;
+        const fim = this.selectionEnd;
+        this.value = this.value.toUpperCase();
+        if (inicio !== null && fim !== null) {
+          this.setSelectionRange(inicio, fim);
+        }
+      });
+    });
+
+    // ================= INDEXEDDB + MIGRAÇÃO + BACKUP =================
+    function abrirBanco() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = e => {
+          const database = e.target.result;
+          if (!database.objectStoreNames.contains(STORE_NAME)) {
+            database.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = e => {
+          db = e.target.result;
+          resolve(db);
+        };
+        req.onerror = e => reject(e.target.error);
+      });
+    }
+
+    function lerTodosIndexedDB() {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function gravarTodosIndexedDB(lista) {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        store.clear();
+        lista.forEach(item => store.put(item));
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function inicializarDados() {
+      await abrirBanco();
+      let dados = await lerTodosIndexedDB();
+
+      // Migra dados antigos do localStorage se existirem
+      const legadoRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legadoRaw) {
+        try {
+          const legado = JSON.parse(legadoRaw);
+          if (Array.isArray(legado) && legado.length > 0 && dados.length === 0) {
+            dados = legado;
+            await gravarTodosIndexedDB(dados);
+          }
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+        } catch { /* ignora erro de parse legado */ }
+      }
+
+      itensCache = dados;
+      atualizarBadgeBackup();
+      renderizar();
+    }
+
+    function marcarSalvo() {
+      const badge = document.getElementById('badge-salvo');
+      const agora = new Date();
+      const hora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      badge.textContent = `✓ Salvo às ${hora}`;
+      badge.style.display = 'inline-block';
+    }
+
+    function atualizarBadgeBackup() {
+      const badge = document.getElementById('badge-backup');
+      const ultimoTs = Number(localStorage.getItem(META_LAST_BACKUP) || 0);
+
+      if (!ultimoTs) {
+        badge.className = 'badge badge-backup-warn';
+        badge.textContent = itensCache.length ? '⚠️ Nenhum backup feito' : 'Backup em dia';
+        return;
+      }
+
+      const dias = Math.floor((Date.now() - ultimoTs) / (1000 * 60 * 60 * 24));
+      if (dias >= 3) {
+        badge.className = 'badge badge-backup-warn';
+        badge.textContent = `⚠️ Último backup há ${dias} dia(s)`;
+      } else {
+        badge.className = 'badge badge-backup-ok';
+        badge.textContent = dias === 0 ? '✓ Backup feito hoje' : `✓ Backup há ${dias} dia(s)`;
+      }
+    }
+
+    function exportarBackupJSON(silencioso = false) {
+      const blob = new Blob([JSON.stringify(itensCache, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup_romaneio_${obterDataHojeLocal()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      localStorage.setItem(META_LAST_BACKUP, String(Date.now()));
+      localStorage.setItem(META_CHANGES_COUNT, '0');
+      atualizarBadgeBackup();
+      if (!silencioso) {
+        marcarSalvo();
+      }
+    }
+
+    async function persistirAlteracoes(novoArray, registrarUndo = false) {
+      if (registrarUndo) {
+        ultimoEstadoUndo = JSON.parse(JSON.stringify(itensCache));
+        btnUndo.style.display = 'inline-block';
+      }
+      itensCache = novoArray;
+      await gravarTodosIndexedDB(itensCache);
+      marcarSalvo();
+
+      // Backup automático silencioso a cada 25 alterações se já houver registros
+      const alteracoes = Number(localStorage.getItem(META_CHANGES_COUNT) || 0) + 1;
+      localStorage.setItem(META_CHANGES_COUNT, String(alteracoes));
+      if (alteracoes >= 25 && itensCache.length > 0) {
+        exportarBackupJSON(true);
+      } else {
+        atualizarBadgeBackup();
+      }
+
+      renderizar();
+    }
+
+    btnUndo.addEventListener('click', async () => {
+      if (!ultimoEstadoUndo) return;
+      const restaurado = ultimoEstadoUndo;
+      ultimoEstadoUndo = null;
+      btnUndo.style.display = 'none';
+      inlineEditId = null;
+      await persistirAlteracoes(restaurado, false);
+    });
+
+    // ================= UTILITÁRIOS DE FORMATAÇÃO =================
     function formatarValorExcel(valor) {
       return Number(valor || 0).toFixed(2).replace('.', ',');
     }
@@ -294,6 +654,15 @@
       return `${dia}/${mes}/${ano}`;
     }
 
+    function escaparHTML(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ================= NAVEGAÇÃO & IMPRESSÃO =================
     function ativarAba(tabId) {
       document.querySelectorAll('.tab-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.tab === tabId);
@@ -321,37 +690,44 @@
 
     document.getElementById('btn-imprimir-hoje-topo').addEventListener('click', imprimirHoje);
     document.getElementById('btn-imprimir-hoje-aba').addEventListener('click', imprimirHoje);
-
-    function limparCamposPedido() {
-      pedidoInput.value = '';
-      clienteInput.value = '';
-      valorInput.value = '';
-      observacaoInput.value = '';
-      idEmEdicao = null;
-      btnSalvar.textContent = 'Adicionar ao romaneio';
-      btnCancelarEdicao.style.display = 'none';
-    }
-
-    btnCancelarEdicao.addEventListener('click', () => {
-      limparCamposPedido();
-      pedidoInput.focus();
+    document.getElementById('btn-imprimir').addEventListener('click', () => {
+      renderizar();
+      window.print();
     });
 
-    // Adicionar ou salvar edição (garantindo texto em MAIÚSCULO)
-    document.getElementById('form-romaneio').addEventListener('submit', e => {
+    // ================= CADASTRO (NOVO PEDIDO) =================
+    document.getElementById('form-romaneio').addEventListener('submit', async e => {
       e.preventDefault();
-      const itens = carregarItens();
+
+      // Validação visual antes de salvar
+      const camposObrigatorios = [dataInput, motoristaInput, pedidoInput, clienteInput, valorInput];
+      let valido = true;
+      camposObrigatorios.forEach(c => {
+        if (!c.value.trim()) {
+          c.classList.add('input-invalid');
+          valido = false;
+        } else {
+          c.classList.remove('input-invalid');
+        }
+      });
+
+      const valorNum = extrairValorMonetario(valorInput.value);
+      if (valorNum <= 0) {
+        valorInput.classList.add('input-invalid');
+        valido = false;
+      }
+
+      if (!valido) return;
+
       const dataValor = dataInput.value;
       const motoristaValor = motoristaInput.value.trim().toUpperCase();
       const pedidoValor = pedidoInput.value.trim().toUpperCase();
       const clienteValor = clienteInput.value.trim().toUpperCase();
-      const valorNum = parseFloat(valorInput.value) || 0;
       const obsValor = observacaoInput.value.trim().toUpperCase();
 
-      const duplicado = itens.some(i =>
-        i.id !== idEmEdicao &&
+      const duplicado = itensCache.some(i =>
         i.data === dataValor &&
-        i.pedido.toUpperCase() === pedidoValor
+        (i.pedido || '').toUpperCase() === pedidoValor
       );
 
       if (duplicado) {
@@ -359,80 +735,172 @@
         if (!confirmar) return;
       }
 
-      if (idEmEdicao !== null) {
-        const index = itens.findIndex(i => i.id === idEmEdicao);
-        if (index !== -1) {
-          itens[index] = {
-            ...itens[index],
-            data: dataValor,
-            motorista: motoristaValor,
-            pedido: pedidoValor,
-            cliente: clienteValor,
-            valor: valorNum,
-            observacao: obsValor
-          };
-        }
-      } else {
-        itens.push({
-          id: Date.now(),
-          data: dataValor,
-          motorista: motoristaValor,
-          pedido: pedidoValor,
-          cliente: clienteValor,
-          valor: valorNum,
-          observacao: obsValor
-        });
-      }
+      const novaLista = [...itensCache, {
+        id: Date.now(),
+        data: dataValor,
+        motorista: motoristaValor,
+        pedido: pedidoValor,
+        cliente: clienteValor,
+        valor: valorNum,
+        observacao: obsValor
+      }];
 
-      salvarItens(itens);
-      limparCamposPedido();
+      pedidoInput.value = '';
+      clienteInput.value = '';
+      valorInput.value = '';
+      observacaoInput.value = '';
       pedidoInput.focus();
-      renderizar();
+
+      await persistirAlteracoes(novaLista, true);
     });
 
-    function editarItem(id) {
-      const item = carregarItens().find(i => i.id === id);
-      if (!item) return;
-
-      idEmEdicao = item.id;
-      dataInput.value = item.data;
-      motoristaInput.value = (item.motorista || '').toUpperCase();
-      pedidoInput.value = (item.pedido || '').toUpperCase();
-      clienteInput.value = (item.cliente || '').toUpperCase();
-      valorInput.value = item.valor;
-      observacaoInput.value = (item.observacao || '').toUpperCase();
-
-      btnSalvar.textContent = 'Salvar edição';
-      btnCancelarEdicao.style.display = 'inline-block';
-      pedidoInput.focus();
+    // ================= EDIÇÃO INLINE NA TABELA =================
+    function iniciarEdicaoInline(id) {
+      inlineEditId = id;
+      renderizar();
+      const primeiroCampo = document.querySelector(`#row-${id} input`);
+      if (primeiroCampo) primeiroCampo.focus();
     }
 
-    function excluirItem(id) {
-      if (idEmEdicao === id) limparCamposPedido();
-      const itens = carregarItens().filter(item => item.id !== id);
-      salvarItens(itens);
+    function cancelarEdicaoInline() {
+      inlineEditId = null;
       renderizar();
     }
 
-    document.getElementById('btn-limpar-dia').addEventListener('click', () => {
+    async function salvarEdicaoInline(id) {
+      const row = document.getElementById(`row-${id}`);
+      if (!row) return;
+
+      const inpData = row.querySelector('[data-field="data"]');
+      const inpMot = row.querySelector('[data-field="motorista"]');
+      const inpPed = row.querySelector('[data-field="pedido"]');
+      const inpCli = row.querySelector('[data-field="cliente"]');
+      const inpVal = row.querySelector('[data-field="valor"]');
+      const inpObs = row.querySelector('[data-field="observacao"]');
+
+      let ok = true;
+      [inpData, inpMot, inpPed, inpCli].forEach(el => {
+        if (!el.value.trim()) {
+          el.classList.add('input-invalid');
+          ok = false;
+        } else {
+          el.classList.remove('input-invalid');
+        }
+      });
+
+      const novoValor = extrairValorMonetario(inpVal.value);
+      if (novoValor <= 0) {
+        inpVal.classList.add('input-invalid');
+        ok = false;
+      }
+      if (!ok) return;
+
+      const itemOriginal = itensCache.find(i => i.id === id);
+      if (itemOriginal && Math.abs(Number(itemOriginal.valor) - novoValor) >= 0.01) {
+        const confirmaValor = confirm(
+          `Confirmar alteração de valor de ${formatarMoeda(itemOriginal.valor)} para ${formatarMoeda(novoValor)}?`
+        );
+        if (!confirmaValor) return;
+      }
+
+      const novaLista = itensCache.map(item => {
+        if (item.id !== id) return item;
+        return {
+          ...item,
+          data: inpData.value,
+          motorista: inpMot.value.trim().toUpperCase(),
+          pedido: inpPed.value.trim().toUpperCase(),
+          cliente: inpCli.value.trim().toUpperCase(),
+          valor: novoValor,
+          observacao: inpObs.value.trim().toUpperCase()
+        };
+      });
+
+      inlineEditId = null;
+      await persistirAlteracoes(novaLista, true);
+    }
+
+    function tratarTeclaInline(event, id) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        salvarEdicaoInline(id);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        cancelarEdicaoInline();
+      }
+    }
+
+    async function excluirItem(id) {
+      if (!confirm('Deseja excluir este pedido do romaneio?')) return;
+      if (inlineEditId === id) inlineEditId = null;
+      const novaLista = itensCache.filter(item => item.id !== id);
+      await persistirAlteracoes(novaLista, true);
+    }
+
+    document.getElementById('btn-limpar-dia').addEventListener('click', async () => {
       const dataAlvo = dataInput.value;
       if (!confirm(`Apagar todos os lançamentos do dia ${formatarDataBR(dataAlvo)}?`)) return;
-      limparCamposPedido();
-      const restantes = carregarItens().filter(item => item.data !== dataAlvo);
-      salvarItens(restantes);
-      renderizar();
+      inlineEditId = null;
+      const novaLista = itensCache.filter(item => item.data !== dataAlvo);
+      await persistirAlteracoes(novaLista, true);
     });
 
-    document.getElementById('btn-imprimir').addEventListener('click', () => {
-      window.print();
-    });
+    // ================= EXPORTAÇÃO EXCEL / CSV ROBUSTA =================
+    const MAPA_COLUNAS = {
+      data: { label: 'DATA', get: i => formatarDataBR(i.data), num: false },
+      motorista: { label: 'MOTORISTA', get: i => (i.motorista || '').toUpperCase(), num: false },
+      pedido: { label: 'Nº PEDIDO', get: i => (i.pedido || '').toUpperCase(), num: false },
+      cliente: { label: 'CLIENTE', get: i => (i.cliente || '').toUpperCase(), num: false },
+      valor: { label: 'VALOR (R$)', get: i => formatarValorExcel(i.valor), num: true },
+      observacao: { label: 'OBSERVAÇÃO', get: i => (i.observacao || '').toUpperCase(), num: false }
+    };
+
+    function obterColunasSelecionadas() {
+      const marcadas = [...document.querySelectorAll('.col-check:checked')].map(c => c.value);
+      return marcadas.length ? marcadas : Object.keys(MAPA_COLUNAS);
+    }
+
+    function obterInicioFimSemana(isoDate) {
+      const [a, m, d] = isoDate.split('-').map(Number);
+      const dt = new Date(a, m - 1, d);
+      const diaSemana = dt.getDay();
+      const inicio = new Date(dt);
+      inicio.setDate(dt.getDate() - diaSemana);
+      const fim = new Date(inicio);
+      fim.setDate(inicio.getDate() + 6);
+      const toISO = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+      return [toISO(inicio), toISO(fim)];
+    }
 
     function obterItensExcel() {
-      const itens = carregarItens();
-      if (excelPeriodo.value === 'todos') {
-        return [...itens].sort((a, b) => a.data.localeCompare(b.data));
+      const modo = excelPeriodo.value;
+      const ordenado = [...itensCache].sort((a, b) => a.data.localeCompare(b.data));
+
+      if (modo === 'todos') return ordenado;
+      if (modo === 'dia') return ordenado.filter(i => i.data === excelData.value);
+      if (modo === 'semana') {
+        const [ini, fim] = obterInicioFimSemana(excelData.value || hoje);
+        return ordenado.filter(i => i.data >= ini && i.data <= fim);
       }
-      return itens.filter(i => i.data === excelData.value);
+      if (modo === 'mes') {
+        const prefixoMes = (excelData.value || hoje).slice(0, 7);
+        return ordenado.filter(i => i.data.startsWith(prefixoMes));
+      }
+      if (modo === 'intervalo') {
+        const ini = excelInicio.value || '0000-01-01';
+        const fim = excelFim.value || '9999-12-31';
+        return ordenado.filter(i => i.data >= ini && i.data <= fim);
+      }
+      return ordenado;
+    }
+
+    function codificarISO88591(texto) {
+      const bytes = new Uint8Array(texto.length);
+      for (let i = 0; i < texto.length; i++) {
+        const code = texto.charCodeAt(i);
+        bytes[i] = code <= 255 ? code : 63; // '?' para caracteres fora do Latin-1
+      }
+      return bytes;
     }
 
     document.getElementById('btn-baixar-csv').addEventListener('click', () => {
@@ -444,24 +912,25 @@
         return;
       }
 
-      const cabecalho = ['DATA', 'MOTORISTA', 'NUMERO_PEDIDO', 'CLIENTE', 'VALOR_COMPRA', 'OBSERVACAO'];
-      const linhas = itens.map(i => [
-        formatarDataBR(i.data),
-        (i.motorista || '').toUpperCase(),
-        (i.pedido || '').toUpperCase(),
-        (i.cliente || '').toUpperCase(),
-        formatarValorExcel(i.valor),
-        (i.observacao || '').toUpperCase()
-      ].map(campo => `"${String(campo).replace(/"/g, '""')}"`).join(';'));
+      const cols = obterColunasSelecionadas();
+      const sep = excelSeparador.value;
+      const cabecalho = cols.map(c => MAPA_COLUNAS[c].label).join(sep);
+      const linhas = itens.map(item =>
+        cols.map(c => `"${String(MAPA_COLUNAS[c].get(item)).replace(/"/g, '""')}"`).join(sep)
+      );
 
-      const csvConteudo = '\uFEFF' + [cabecalho.join(';'), ...linhas].join('\r\n');
-      const blob = new Blob([csvConteudo], { type: 'text/csv;charset=utf-8;' });
+      const textoFinal = [cabecalho, ...linhas].join('\r\n');
+      let blob;
+
+      if (excelEncoding.value === 'iso') {
+        const bytes = codificarISO88591(textoFinal);
+        blob = new Blob([bytes], { type: 'text/csv;charset=iso-8859-1;' });
+      } else {
+        blob = new Blob(['\uFEFF' + textoFinal], { type: 'text/csv;charset=utf-8;' });
+      }
+
       const url = URL.createObjectURL(blob);
-
-      const nomeArquivo = excelPeriodo.value === 'todos'
-        ? 'romaneio_completo.csv'
-        : `romaneio_${excelData.value}.csv`;
-
+      const nomeArquivo = `romaneio_${excelPeriodo.value}_${obterDataHojeLocal()}.csv`;
       const link = document.createElement('a');
       link.href = url;
       link.download = nomeArquivo;
@@ -481,47 +950,33 @@
         return;
       }
 
-      const cabecalho = ['DATA', 'MOTORISTA', 'Nº PEDIDO', 'CLIENTE', 'VALOR DA COMPRA', 'OBSERVAÇÃO'].join('\t');
-      const linhas = itens.map(i => [
-        formatarDataBR(i.data),
-        (i.motorista || '').toUpperCase(),
-        (i.pedido || '').toUpperCase(),
-        (i.cliente || '').toUpperCase(),
-        formatarValorExcel(i.valor),
-        (i.observacao || '').toUpperCase().replace(/\s+/g, ' ')
-      ].join('\t'));
+      const cols = obterColunasSelecionadas();
+      const cabecalho = cols.map(c => MAPA_COLUNAS[c].label).join('\t');
+      const linhas = itens.map(item =>
+        cols.map(c => String(MAPA_COLUNAS[c].get(item)).replace(/\s+/g, ' ')).join('\t')
+      );
 
       await navigator.clipboard.writeText([cabecalho, ...linhas].join('\n'));
       feedback.textContent = 'Copiado! Abra o Excel e pressione Ctrl + V.';
       setTimeout(() => { feedback.textContent = ''; }, 4000);
     });
 
-    document.getElementById('btn-backup-salvar').addEventListener('click', () => {
-      const itens = carregarItens();
-      const blob = new Blob([JSON.stringify(itens, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `backup_romaneio_${obterDataHojeLocal()}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-    });
-
+    // Backup manual e restauração
+    document.getElementById('btn-backup-salvar').addEventListener('click', () => exportarBackupJSON(false));
     const inputBackup = document.getElementById('input-backup-arquivo');
-    document.getElementById('btn-backup-restaurar').addEventListener('click', () => {
-      inputBackup.click();
-    });
+    document.getElementById('btn-backup-restaurar').addEventListener('click', () => inputBackup.click());
 
     inputBackup.addEventListener('change', e => {
       const arquivo = e.target.files[0];
       if (!arquivo) return;
       const leitor = new FileReader();
-      leitor.onload = ev => {
+      leitor.onload = async ev => {
         try {
           const dados = JSON.parse(ev.target.result);
           if (!Array.isArray(dados)) throw new Error('Formato inválido');
-          salvarItens(dados);
-          renderizar();
+          await persistirAlteracoes(dados, true);
+          localStorage.setItem(META_LAST_BACKUP, String(Date.now()));
+          atualizarBadgeBackup();
           alert(`Backup restaurado com sucesso (${dados.length} registros)!`);
         } catch {
           alert('Arquivo de backup inválido.');
@@ -531,87 +986,176 @@
       leitor.readAsText(arquivo);
     });
 
+    // ================= ATALHOS DE TECLADO GLOBAIS =================
+    document.addEventListener('keydown', e => {
+      const tag = document.activeElement?.tagName;
+      const emInput = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
+
+      // Ctrl+P -> Imprimir o dia
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        imprimirHoje();
+        return;
+      }
+
+      // Ctrl+S -> Salvar edição inline ou exportar CSV/Backup
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (inlineEditId !== null) {
+          salvarEdicaoInline(inlineEditId);
+        } else {
+          exportarBackupJSON(false);
+        }
+        return;
+      }
+
+      // Alt+N -> Novo lançamento
+      if (e.altKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        ativarAba('tab-cadastro');
+        motoristaInput.focus();
+        return;
+      }
+
+      // / fora de inputs -> Focar busca rápida
+      if (!emInput && e.key === '/') {
+        e.preventDefault();
+        ativarAba('tab-cadastro');
+        buscaRapidaInput.focus();
+      }
+    });
+
+    // Listeners de filtro
     dataInput.addEventListener('change', renderizar);
+    buscaRapidaInput.addEventListener('input', renderizar);
     filtroData.addEventListener('change', renderizar);
     filtroMotorista.addEventListener('change', renderizar);
+    excelData.addEventListener('change', renderizar);
+    excelInicio.addEventListener('change', renderizar);
+    excelFim.addEventListener('change', renderizar);
+    document.querySelectorAll('.col-check').forEach(cb => cb.addEventListener('change', renderizar));
+
     excelPeriodo.addEventListener('change', () => {
-      campoExcelData.style.display = excelPeriodo.value === 'todos' ? 'none' : 'flex';
+      const modo = excelPeriodo.value;
+      document.getElementById('campo-excel-data').style.display =
+        (modo === 'dia' || modo === 'semana' || modo === 'mes') ? 'flex' : 'none';
+      document.getElementById('campo-excel-inicio').style.display = modo === 'intervalo' ? 'flex' : 'none';
+      document.getElementById('campo-excel-fim').style.display = modo === 'intervalo' ? 'flex' : 'none';
       renderizar();
     });
-    excelData.addEventListener('change', renderizar);
 
+    // ================= RENDERIZAÇÃO PRINCIPAL =================
     function renderizar() {
-      const itens = carregarItens();
-
-      const todosMotoristas = [...new Set(itens.map(i => (i.motorista || '').toUpperCase()).filter(Boolean))].sort();
+      // Autocomplete de Motoristas e Clientes
+      const todosMotoristas = [...new Set(itensCache.map(i => (i.motorista || '').toUpperCase()).filter(Boolean))].sort();
       document.getElementById('lista-motoristas').innerHTML =
-        todosMotoristas.map(m => `<option value="${m}"></option>`).join('');
+        todosMotoristas.map(m => `<option value="${escaparHTML(m)}"></option>`).join('');
 
-      // Aba 1: Cadastro
-      const itensCadastro = itens.filter(i => i.data === dataInput.value);
-      document.getElementById('tbody-cadastro').innerHTML = itensCadastro.map(item => `
-        <tr>
-          <td>${formatarDataBR(item.data)}</td>
-          <td>${(item.motorista || '').toUpperCase()}</td>
-          <td>${(item.pedido || '').toUpperCase()}</td>
-          <td>${(item.cliente || '').toUpperCase()}</td>
-          <td class="num">${formatarMoeda(item.valor)}</td>
-          <td>${(item.observacao || '-').toUpperCase()}</td>
-          <td class="no-print">
-            <div class="acoes-celula">
-              <button type="button" class="warning" onclick="editarItem(${item.id})">Editar</button>
-              <button type="button" class="danger" onclick="excluirItem(${item.id})">Excluir</button>
-            </div>
-          </td>
-        </tr>
-      `).join('');
+      const todosClientes = [...new Set(itensCache.map(i => (i.cliente || '').toUpperCase()).filter(Boolean))].sort();
+      document.getElementById('lista-clientes').innerHTML =
+        todosClientes.map(c => `<option value="${escaparHTML(c)}"></option>`).join('');
+
+      // ABA 1: Cadastro + Busca + Edição Inline
+      const termoBusca = buscaRapidaInput.value.trim().toUpperCase();
+      const itensCadastro = itensCache.filter(i => {
+        if (i.data !== dataInput.value) return false;
+        if (!termoBusca) return true;
+        return (
+          (i.pedido || '').toUpperCase().includes(termoBusca) ||
+          (i.cliente || '').toUpperCase().includes(termoBusca) ||
+          (i.motorista || '').toUpperCase().includes(termoBusca) ||
+          (i.observacao || '').toUpperCase().includes(termoBusca)
+        );
+      });
+
+      document.getElementById('tbody-cadastro').innerHTML = itensCadastro.map(item => {
+        if (inlineEditId === item.id) {
+          return `
+            <tr id="row-${item.id}" class="editing-row" onkeydown="tratarTeclaInline(event, ${item.id})">
+              <td><input type="date" class="inline-input" data-field="data" value="${escaparHTML(item.data)}" aria-label="Editar data" /></td>
+              <td><input type="text" class="inline-input" data-field="motorista" list="lista-motoristas" value="${escaparHTML(item.motorista)}" oninput="this.value=this.value.toUpperCase()" aria-label="Editar motorista" /></td>
+              <td><input type="text" class="inline-input" data-field="pedido" value="${escaparHTML(item.pedido)}" oninput="this.value=this.value.toUpperCase()" aria-label="Editar número do pedido" /></td>
+              <td><input type="text" class="inline-input" data-field="cliente" list="lista-clientes" value="${escaparHTML(item.cliente)}" oninput="this.value=this.value.toUpperCase()" aria-label="Editar cliente" /></td>
+              <td><input type="text" class="inline-input num" data-field="valor" value="${formatarMoeda(item.valor)}" oninput="aplicarMascaraMoedaInput(this)" aria-label="Editar valor" /></td>
+              <td><input type="text" class="inline-input" data-field="observacao" value="${escaparHTML(item.observacao)}" oninput="this.value=this.value.toUpperCase()" aria-label="Editar observação" /></td>
+              <td class="no-print">
+                <div class="acoes-celula">
+                  <button type="button" class="success" style="min-height:32px;padding:4px 10px;" onclick="salvarEdicaoInline(${item.id})">Salvar</button>
+                  <button type="button" class="secondary" style="min-height:32px;padding:4px 10px;" onclick="cancelarEdicaoInline()">Cancelar</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }
+
+        return `
+          <tr id="row-${item.id}" ondblclick="iniciarEdicaoInline(${item.id})" title="Duplo clique para editar na linha">
+            <td>${formatarDataBR(item.data)}</td>
+            <td>${escaparHTML((item.motorista || '').toUpperCase())}</td>
+            <td>${escaparHTML((item.pedido || '').toUpperCase())}</td>
+            <td>${escaparHTML((item.cliente || '').toUpperCase())}</td>
+            <td class="num">${formatarMoeda(item.valor)}</td>
+            <td>${escaparHTML((item.observacao || '-').toUpperCase())}</td>
+            <td class="no-print">
+              <div class="acoes-celula">
+                <button type="button" class="warning" onclick="iniciarEdicaoInline(${item.id})">Editar</button>
+                <button type="button" class="danger" onclick="excluirItem(${item.id})">Excluir</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
 
       const somaCad = itensCadastro.reduce((acc, i) => acc + Number(i.valor || 0), 0);
       document.getElementById('qtd-cadastro').textContent = `Total de pedidos: ${itensCadastro.length}`;
       document.getElementById('total-cadastro').textContent = `Valor total: ${formatarMoeda(somaCad)}`;
 
-      // Aba 2: Impressão Diária
+      // ABA 2: Impressão Diária
       const motoristasDia = [...new Set(
-        itens.filter(i => i.data === filtroData.value).map(i => (i.motorista || '').toUpperCase()).filter(Boolean)
+        itensCache.filter(i => i.data === filtroData.value).map(i => (i.motorista || '').toUpperCase()).filter(Boolean)
       )];
       const motoristaAtual = filtroMotorista.value;
       filtroMotorista.innerHTML = `<option value="">TODOS OS MOTORISTAS</option>` +
-        motoristasDia.map(m => `<option value="${m}">${m}</option>`).join('');
+        motoristasDia.map(m => `<option value="${escaparHTML(m)}">${escaparHTML(m)}</option>`).join('');
       filtroMotorista.value = motoristasDia.includes(motoristaAtual) ? motoristaAtual : '';
 
-      const itensImp = itens.filter(i =>
+      const itensImp = itensCache.filter(i =>
         i.data === filtroData.value &&
         (!filtroMotorista.value || (i.motorista || '').toUpperCase() === filtroMotorista.value)
       );
 
       document.getElementById('tbody-impressao').innerHTML = itensImp.map(item => `
         <tr>
-          <td>${(item.pedido || '').toUpperCase()}</td>
-          <td>${(item.motorista || '').toUpperCase()}</td>
-          <td>${(item.cliente || '').toUpperCase()}</td>
+          <td>${escaparHTML((item.pedido || '').toUpperCase())}</td>
+          <td>${escaparHTML((item.motorista || '').toUpperCase())}</td>
+          <td>${escaparHTML((item.cliente || '').toUpperCase())}</td>
           <td class="num">${formatarMoeda(item.valor)}</td>
-          <td>${(item.observacao || '-').toUpperCase()}</td>
-          <td style="min-width: 140px;"></td>
+          <td>${escaparHTML((item.observacao || '-').toUpperCase())}</td>
+          <td style="min-width: 150px;"></td>
         </tr>
       `).join('');
 
       const somaImp = itensImp.reduce((acc, i) => acc + Number(i.valor || 0), 0);
       document.getElementById('qtd-impressao').textContent = `Entregas no dia: ${itensImp.length}`;
       document.getElementById('total-impressao').textContent = `Total do romaneio: ${formatarMoeda(somaImp)}`;
-      document.getElementById('cabecalho-impresso').textContent =
-        `DATA: ${formatarDataBR(filtroData.value)} | MOTORISTA: ${filtroMotorista.value || 'TODOS'}`;
 
-      // Aba 3: Exportar para Excel
+      const empresaTitulo = nomeEmpresaInput.value.trim() || 'CONTROLE DE ROMANEIO DE ENTREGA';
+      document.getElementById('print-empresa-titulo').textContent = empresaTitulo;
+      document.getElementById('cabecalho-impresso').textContent =
+        `DATA DA ROTA: ${formatarDataBR(filtroData.value)} | MOTORISTA: ${filtroMotorista.value || 'TODOS'}`;
+      document.getElementById('print-data-emissao').textContent = `EMITIDO EM: ${obterDataHoraAtualBR()}`;
+
+      // ABA 3: Exportar para Excel (prévia dinâmica conforme colunas escolhidas)
+      const cols = obterColunasSelecionadas();
+      document.getElementById('thead-excel').innerHTML = `<tr>${cols.map(c =>
+        `<th class="${MAPA_COLUNAS[c].num ? 'num' : ''}">${MAPA_COLUNAS[c].label}</th>`
+      ).join('')}</tr>`;
+
       const itensExcel = obterItensExcel();
       document.getElementById('tbody-excel').innerHTML = itensExcel.map(item => `
-        <tr>
-          <td>${formatarDataBR(item.data)}</td>
-          <td>${(item.motorista || '').toUpperCase()}</td>
-          <td>${(item.pedido || '').toUpperCase()}</td>
-          <td>${(item.cliente || '').toUpperCase()}</td>
-          <td class="num">${formatarValorExcel(item.valor)}</td>
-          <td>${(item.observacao || '').toUpperCase()}</td>
-        </tr>
+        <tr>${cols.map(c =>
+          `<td class="${MAPA_COLUNAS[c].num ? 'num' : ''}">${escaparHTML(MAPA_COLUNAS[c].get(item))}</td>`
+        ).join('')}</tr>
       `).join('');
 
       const somaExcel = itensExcel.reduce((acc, i) => acc + Number(i.valor || 0), 0);
@@ -619,7 +1163,8 @@
       document.getElementById('total-excel').textContent = `Total: ${formatarMoeda(somaExcel)}`;
     }
 
-    renderizar();
+    // Inicia aplicação
+    inicializarDados();
   </script>
 </body>
 </html>
