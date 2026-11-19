@@ -23,6 +23,8 @@
       --secondary-bg: #e5e7eb;
       --secondary-text: #111827;
       --row-editing: #fef3c7;
+      --row-delivered: #f0fdf4;
+      --row-failed: #fef2f2;
     }
 
     body.dark {
@@ -43,11 +45,13 @@
       --secondary-bg: #334155;
       --secondary-text: #f1f5f9;
       --row-editing: #422006;
+      --row-delivered: #052e16;
+      --row-failed: #450a0a;
     }
 
     * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
     body { margin: 0; padding: 16px; background: var(--bg-body); color: var(--text-main); transition: background 0.2s, color 0.2s; }
-    .container { max-width: 1220px; margin: 0 auto; background: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+    .container { max-width: 1280px; margin: 0 auto; background: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
 
     .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
     .title-area { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -96,7 +100,6 @@
     .busca-box { flex: 1; min-width: 240px; }
     .atalhos-dica { font-size: 0.78rem; color: var(--text-muted); }
 
-    /* Cards de resumo da aba Turnos */
     .turno-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
     .turno-card { padding: 14px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-subtle); }
     .turno-card h3 { margin: 0 0 6px 0; font-size: 1rem; display: flex; align-items: center; justify-content: space-between; }
@@ -104,11 +107,23 @@
     .turno-card .sub-info { font-size: 0.85rem; color: var(--text-muted); }
 
     .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px; }
-    table { width: 100%; border-collapse: collapse; min-width: 720px; }
-    th, td { border: 1px solid var(--border-light); padding: 8px 10px; text-align: left; font-size: 0.9rem; }
+    table { width: 100%; border-collapse: collapse; min-width: 820px; }
+    th, td { border: 1px solid var(--border-light); padding: 8px 10px; text-align: left; font-size: 0.9rem; vertical-align: middle; }
     th { background: var(--bg-subtle); font-weight: 700; white-space: nowrap; }
     tr.editing-row { background: var(--row-editing); }
+    tr.row-entregue { background: var(--row-delivered); }
+    tr.row-nao-entregue { background: var(--row-failed); }
+
     .inline-input { padding: 6px 8px; font-size: 0.9rem; min-width: 90px; }
+    .status-box { display: flex; flex-direction: column; gap: 5px; min-width: 175px; }
+    .status-select { padding: 5px 8px; font-size: 0.82rem; font-weight: 700; border-radius: 5px; cursor: pointer; }
+    .status-select.st-pendente { border-color: #9ca3af; }
+    .status-select.st-entregue { border-color: #16a34a; color: #15803d; }
+    .status-select.st-nao-entregue { border-color: #dc2626; color: #dc2626; }
+    body.dark .status-select.st-entregue { color: #4ade80; }
+    body.dark .status-select.st-nao-entregue { color: #f87171; }
+    .motivo-nao-entregue-input { padding: 5px 8px; font-size: 0.82rem; border-color: var(--danger); }
+
     .num { text-align: right; white-space: nowrap; }
     .acoes-celula { display: flex; gap: 6px; white-space: nowrap; }
 
@@ -238,7 +253,7 @@
 
       <div class="toolbar-busca no-print">
         <div class="field busca-box">
-          <label for="busca-rapida">Buscar na data (pedido, cliente, motorista, turno ou observação)</label>
+          <label for="busca-rapida">Buscar na data (pedido, cliente, motorista, turno, status ou observação)</label>
           <input type="text" id="busca-rapida" placeholder="Digite para filtrar... (Atalho: /)" />
         </div>
         <div class="atalhos-dica">
@@ -257,6 +272,7 @@
               <th>Cliente</th>
               <th class="num">Valor</th>
               <th>Observação</th>
+              <th class="no-print">Status Entrega</th>
               <th class="no-print">Ações</th>
             </tr>
           </thead>
@@ -266,6 +282,7 @@
 
       <div class="summary">
         <span id="qtd-cadastro">Total de pedidos: 0</span>
+        <span id="status-resumo-cadastro">Entregues: 0 | Não entregues: 0 | Pendentes: 0</span>
         <span id="total-cadastro">Valor total: R$ 0,00</span>
       </div>
     </section>
@@ -323,6 +340,7 @@
               <th>Cliente</th>
               <th class="num">Valor</th>
               <th>Observação</th>
+              <th class="no-print">Status Entrega</th>
               <th class="no-print">Mover Turno</th>
             </tr>
           </thead>
@@ -392,7 +410,7 @@
               <th>Cliente</th>
               <th class="num">Valor</th>
               <th>Observação</th>
-              <th>Assinatura / Conferência</th>
+              <th>Status / Assinatura</th>
             </tr>
           </thead>
           <tbody id="tbody-impressao"></tbody>
@@ -463,6 +481,8 @@
         <label><input type="checkbox" class="col-check" value="cliente" checked /> Cliente</label>
         <label><input type="checkbox" class="col-check" value="valor" checked /> Valor</label>
         <label><input type="checkbox" class="col-check" value="observacao" checked /> Observação</label>
+        <label><input type="checkbox" class="col-check" value="statusEntrega" checked /> Status Entrega</label>
+        <label><input type="checkbox" class="col-check" value="motivoNaoEntrega" checked /> Obs. Não Entrega</label>
       </div>
 
       <div class="actions">
@@ -493,7 +513,6 @@
   </div>
 
   <script>
-    // ================= CONFIGURAÇÃO & ESTADO =================
     const DB_NAME = 'RomaneioEntregasDB';
     const DB_VERSION = 1;
     const STORE_NAME = 'entregas';
@@ -530,7 +549,6 @@
 
     const hoje = obterDataHojeLocal();
 
-    // Elementos principais
     const dataInput = document.getElementById('data');
     const turnoInput = document.getElementById('turno');
     const motoristaInput = document.getElementById('motorista');
@@ -573,7 +591,6 @@
       renderizar();
     });
 
-    // ================= MODO ESCURO =================
     const btnTema = document.getElementById('btn-tema');
     function aplicarTema(escuro) {
       document.body.classList.toggle('dark', escuro);
@@ -586,7 +603,6 @@
       aplicarTema(novoEstado);
     });
 
-    // ================= MÁSCARA MONETÁRIA & MAIÚSCULO =================
     function formatarMoeda(valor) {
       return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
@@ -630,13 +646,49 @@
       return t === 'TARDE' ? 'TARDE' : 'MANHÃ';
     }
 
+    function normalizarStatusEntrega(status) {
+      const s = String(status || 'PENDENTE').toUpperCase();
+      if (s === 'ENTREGUE') return 'ENTREGUE';
+      if (s === 'NÃO ENTREGUE') return 'NÃO ENTREGUE';
+      return 'PENDENTE';
+    }
+
     function renderBadgeTurno(turno) {
       const t = normalizarTurno(turno);
       const cls = t === 'TARDE' ? 'turno-tarde' : 'turno-manha';
       return `<span class="badge-turno ${cls}">${t}</span><span class="print-turno-text">${t}</span>`;
     }
 
-    // ================= INDEXEDDB + MIGRAÇÃO + BACKUP =================
+    function renderControleStatusEntrega(item) {
+      const st = normalizarStatusEntrega(item.statusEntrega);
+      const motivo = escaparHTML((item.motivoNaoEntrega || '').toUpperCase());
+      const clsSelect = st === 'ENTREGUE'
+        ? 'st-entregue'
+        : (st === 'NÃO ENTREGUE' ? 'st-nao-entregue' : 'st-pendente');
+
+      const campoMotivo = st === 'NÃO ENTREGUE'
+        ? `<input type="text"
+             class="motivo-nao-entregue-input"
+             value="${motivo}"
+             placeholder="Motivo / Obs. não entrega..."
+             aria-label="Observação de não entrega"
+             oninput="this.value=this.value.toUpperCase()"
+             onchange="atualizarMotivoNaoEntrega(${item.id}, this.value)"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" />`
+        : '';
+
+      return `
+        <div class="status-box">
+          <select class="status-select ${clsSelect}" aria-label="Status da entrega" onchange="atualizarStatusEntrega(${item.id}, this.value)">
+            <option value="PENDENTE" ${st === 'PENDENTE' ? 'selected' : ''}>⏳ PENDENTE</option>
+            <option value="ENTREGUE" ${st === 'ENTREGUE' ? 'selected' : ''}>✅ ENTREGUE</option>
+            <option value="NÃO ENTREGUE" ${st === 'NÃO ENTREGUE' ? 'selected' : ''}>❌ NÃO ENTREGUE</option>
+          </select>
+          ${campoMotivo}
+        </div>
+      `;
+    }
+
     function abrirBanco() {
       return new Promise((resolve, reject) => {
         const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -770,7 +822,6 @@
       await persistirAlteracoes(restaurado, false);
     });
 
-    // ================= UTILITÁRIOS DE FORMATAÇÃO =================
     function formatarValorExcel(valor) {
       return Number(valor || 0).toFixed(2).replace('.', ',');
     }
@@ -789,7 +840,6 @@
         .replace(/"/g, '&quot;');
     }
 
-    // ================= NAVEGAÇÃO & IMPRESSÃO =================
     function ativarAba(tabId) {
       document.querySelectorAll('.tab-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.tab === tabId);
@@ -832,7 +882,7 @@
       window.print();
     });
 
-    // ================= CADASTRO (NOVO PEDIDO) =================
+    // ================= CADASTRO =================
     document.getElementById('form-romaneio').addEventListener('submit', async e => {
       e.preventDefault();
 
@@ -880,7 +930,9 @@
         pedido: pedidoValor,
         cliente: clienteValor,
         valor: valorNum,
-        observacao: obsValor
+        observacao: obsValor,
+        statusEntrega: 'PENDENTE',
+        motivoNaoEntrega: ''
       }];
 
       pedidoInput.value = '';
@@ -892,7 +944,34 @@
       await persistirAlteracoes(novaLista, true);
     });
 
-    // Alternar turno rápido na aba Turnos
+    // ================= ATUALIZAÇÃO DE STATUS DE ENTREGA =================
+    async function atualizarStatusEntrega(id, novoStatus) {
+      const statusNorm = normalizarStatusEntrega(novoStatus);
+      const novaLista = itensCache.map(item => {
+        if (item.id !== id) return item;
+        return {
+          ...item,
+          statusEntrega: statusNorm,
+          motivoNaoEntrega: statusNorm === 'NÃO ENTREGUE' ? (item.motivoNaoEntrega || '') : ''
+        };
+      });
+      await persistirAlteracoes(novaLista, true);
+
+      if (statusNorm === 'NÃO ENTREGUE') {
+        const inp = document.querySelector(`#row-${id} .motivo-nao-entregue-input, #row-turno-${id} .motivo-nao-entregue-input`);
+        if (inp) inp.focus();
+      }
+    }
+
+    async function atualizarMotivoNaoEntrega(id, textoMotivo) {
+      const motivoLimpo = String(textoMotivo || '').trim().toUpperCase();
+      const novaLista = itensCache.map(item => {
+        if (item.id !== id) return item;
+        return { ...item, motivoNaoEntrega: motivoLimpo };
+      });
+      await persistirAlteracoes(novaLista, true);
+    }
+
     async function alternarTurnoItem(id) {
       const novaLista = itensCache.map(item => {
         if (item.id !== id) return item;
@@ -902,7 +981,7 @@
       await persistirAlteracoes(novaLista, true);
     }
 
-    // ================= EDIÇÃO INLINE NA TABELA =================
+    // ================= EDIÇÃO INLINE =================
     function iniciarEdicaoInline(id) {
       inlineEditId = id;
       renderizar();
@@ -995,7 +1074,7 @@
       await persistirAlteracoes(novaLista, true);
     });
 
-    // ================= EXPORTAÇÃO EXCEL / CSV ROBUSTA =================
+    // ================= EXPORTAÇÃO EXCEL / CSV =================
     const MAPA_COLUNAS = {
       data: { label: 'DATA', get: i => formatarDataBR(i.data), num: false },
       turno: { label: 'TURNO', get: i => normalizarTurno(i.turno), num: false },
@@ -1003,7 +1082,9 @@
       pedido: { label: 'Nº PEDIDO', get: i => (i.pedido || '').toUpperCase(), num: false },
       cliente: { label: 'CLIENTE', get: i => (i.cliente || '').toUpperCase(), num: false },
       valor: { label: 'VALOR (R$)', get: i => formatarValorExcel(i.valor), num: true },
-      observacao: { label: 'OBSERVAÇÃO', get: i => (i.observacao || '').toUpperCase(), num: false }
+      observacao: { label: 'OBSERVAÇÃO', get: i => (i.observacao || '').toUpperCase(), num: false },
+      statusEntrega: { label: 'STATUS ENTREGA', get: i => normalizarStatusEntrega(i.statusEntrega), num: false },
+      motivoNaoEntrega: { label: 'OBS. NÃO ENTREGA', get: i => (i.motivoNaoEntrega || '').toUpperCase(), num: false }
     };
 
     function obterColunasSelecionadas() {
@@ -1141,7 +1222,6 @@
       leitor.readAsText(arquivo);
     });
 
-    // ================= ATALHOS DE TECLADO GLOBAIS =================
     document.addEventListener('keydown', e => {
       const tag = document.activeElement?.tagName;
       const emInput = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
@@ -1176,7 +1256,6 @@
       }
     });
 
-    // Listeners de filtro
     dataInput.addEventListener('change', renderizar);
     buscaRapidaInput.addEventListener('input', renderizar);
     turnoAbaData.addEventListener('change', renderizar);
@@ -1200,7 +1279,6 @@
       renderizar();
     });
 
-    // ================= RENDERIZAÇÃO PRINCIPAL =================
     function renderizar() {
       const todosMotoristas = [...new Set(itensCache.map(i => (i.motorista || '').toUpperCase()).filter(Boolean))].sort();
       document.getElementById('lista-motoristas').innerHTML =
@@ -1217,6 +1295,8 @@
         if (!termoBusca) return true;
         return (
           normalizarTurno(i.turno).includes(termoBusca) ||
+          normalizarStatusEntrega(i.statusEntrega).includes(termoBusca) ||
+          (i.motivoNaoEntrega || '').toUpperCase().includes(termoBusca) ||
           (i.pedido || '').toUpperCase().includes(termoBusca) ||
           (i.cliente || '').toUpperCase().includes(termoBusca) ||
           (i.motorista || '').toUpperCase().includes(termoBusca) ||
@@ -1226,6 +1306,11 @@
 
       document.getElementById('tbody-cadastro').innerHTML = itensCadastro.map(item => {
         const turnoAtual = normalizarTurno(item.turno);
+        const stAtual = normalizarStatusEntrega(item.statusEntrega);
+        const rowClass = stAtual === 'ENTREGUE'
+          ? 'row-entregue'
+          : (stAtual === 'NÃO ENTREGUE' ? 'row-nao-entregue' : '');
+
         if (inlineEditId === item.id) {
           return `
             <tr id="row-${item.id}" class="editing-row" onkeydown="tratarTeclaInline(event, ${item.id})">
@@ -1241,6 +1326,7 @@
               <td><input type="text" class="inline-input" data-field="cliente" list="lista-clientes" value="${escaparHTML(item.cliente)}" oninput="this.value=this.value.toUpperCase()" aria-label="Editar cliente" /></td>
               <td><input type="text" class="inline-input num" data-field="valor" value="${formatarMoeda(item.valor)}" oninput="aplicarMascaraMoedaInput(this)" aria-label="Editar valor" /></td>
               <td><input type="text" class="inline-input" data-field="observacao" value="${escaparHTML(item.observacao)}" oninput="this.value=this.value.toUpperCase()" aria-label="Editar observação" /></td>
+              <td class="no-print">${renderControleStatusEntrega(item)}</td>
               <td class="no-print">
                 <div class="acoes-celula">
                   <button type="button" class="success" style="min-height:32px;padding:4px 10px;" onclick="salvarEdicaoInline(${item.id})">Salvar</button>
@@ -1252,7 +1338,7 @@
         }
 
         return `
-          <tr id="row-${item.id}" ondblclick="iniciarEdicaoInline(${item.id})" title="Duplo clique para editar na linha">
+          <tr id="row-${item.id}" class="${rowClass}" ondblclick="iniciarEdicaoInline(${item.id})" title="Duplo clique para editar na linha">
             <td>${formatarDataBR(item.data)}</td>
             <td>${renderBadgeTurno(turnoAtual)}</td>
             <td>${escaparHTML((item.motorista || '').toUpperCase())}</td>
@@ -1260,6 +1346,7 @@
             <td>${escaparHTML((item.cliente || '').toUpperCase())}</td>
             <td class="num">${formatarMoeda(item.valor)}</td>
             <td>${escaparHTML((item.observacao || '-').toUpperCase())}</td>
+            <td class="no-print" ondblclick="event.stopPropagation()">${renderControleStatusEntrega(item)}</td>
             <td class="no-print">
               <div class="acoes-celula">
                 <button type="button" class="warning" onclick="iniciarEdicaoInline(${item.id})">Editar</button>
@@ -1271,7 +1358,13 @@
       }).join('');
 
       const somaCad = itensCadastro.reduce((acc, i) => acc + Number(i.valor || 0), 0);
+      const qtdEntregues = itensCadastro.filter(i => normalizarStatusEntrega(i.statusEntrega) === 'ENTREGUE').length;
+      const qtdNaoEntregues = itensCadastro.filter(i => normalizarStatusEntrega(i.statusEntrega) === 'NÃO ENTREGUE').length;
+      const qtdPendentes = itensCadastro.length - qtdEntregues - qtdNaoEntregues;
+
       document.getElementById('qtd-cadastro').textContent = `Total de pedidos: ${itensCadastro.length}`;
+      document.getElementById('status-resumo-cadastro').textContent =
+        `✅ Entregues: ${qtdEntregues} | ❌ Não entregues: ${qtdNaoEntregues} | ⏳ Pendentes: ${qtdPendentes}`;
       document.getElementById('total-cadastro').textContent = `Valor total: ${formatarMoeda(somaCad)}`;
 
       // ABA 2: Turnos (Manhã / Tarde)
@@ -1306,14 +1399,20 @@
       document.getElementById('tbody-turnos').innerHTML = itensTurnosFiltrados.map(item => {
         const tAtual = normalizarTurno(item.turno);
         const destino = tAtual === 'MANHÃ' ? 'TARDE' : 'MANHÃ';
+        const stAtual = normalizarStatusEntrega(item.statusEntrega);
+        const rowClass = stAtual === 'ENTREGUE'
+          ? 'row-entregue'
+          : (stAtual === 'NÃO ENTREGUE' ? 'row-nao-entregue' : '');
+
         return `
-          <tr>
+          <tr id="row-turno-${item.id}" class="${rowClass}">
             <td>${renderBadgeTurno(tAtual)}</td>
             <td>${escaparHTML((item.motorista || '').toUpperCase())}</td>
             <td>${escaparHTML((item.pedido || '').toUpperCase())}</td>
             <td>${escaparHTML((item.cliente || '').toUpperCase())}</td>
             <td class="num">${formatarMoeda(item.valor)}</td>
             <td>${escaparHTML((item.observacao || '-').toUpperCase())}</td>
+            <td class="no-print">${renderControleStatusEntrega(item)}</td>
             <td class="no-print">
               <button type="button" class="secondary" style="min-height:32px;padding:4px 10px;font-size:0.8rem;" onclick="alternarTurnoItem(${item.id})">
                 Mover p/ ${destino}
@@ -1344,17 +1443,28 @@
         )
         .sort((a, b) => normalizarTurno(a.turno).localeCompare(normalizarTurno(b.turno)));
 
-      document.getElementById('tbody-impressao').innerHTML = itensImp.map(item => `
-        <tr>
-          <td>${escaparHTML((item.pedido || '').toUpperCase())}</td>
-          <td>${renderBadgeTurno(item.turno)}</td>
-          <td>${escaparHTML((item.motorista || '').toUpperCase())}</td>
-          <td>${escaparHTML((item.cliente || '').toUpperCase())}</td>
-          <td class="num">${formatarMoeda(item.valor)}</td>
-          <td>${escaparHTML((item.observacao || '-').toUpperCase())}</td>
-          <td style="min-width: 150px;"></td>
-        </tr>
-      `).join('');
+      document.getElementById('tbody-impressao').innerHTML = itensImp.map(item => {
+        const st = normalizarStatusEntrega(item.statusEntrega);
+        let textoStatusImpressao = '';
+        if (st === 'ENTREGUE') {
+          textoStatusImpressao = 'ENTREGUE';
+        } else if (st === 'NÃO ENTREGUE') {
+          const mot = (item.motivoNaoEntrega || '').toUpperCase();
+          textoStatusImpressao = mot ? `NÃO ENTREGUE (${mot})` : 'NÃO ENTREGUE';
+        }
+
+        return `
+          <tr>
+            <td>${escaparHTML((item.pedido || '').toUpperCase())}</td>
+            <td>${renderBadgeTurno(item.turno)}</td>
+            <td>${escaparHTML((item.motorista || '').toUpperCase())}</td>
+            <td>${escaparHTML((item.cliente || '').toUpperCase())}</td>
+            <td class="num">${formatarMoeda(item.valor)}</td>
+            <td>${escaparHTML((item.observacao || '-').toUpperCase())}</td>
+            <td style="min-width: 165px;">${escaparHTML(textoStatusImpressao)}</td>
+          </tr>
+        `;
+      }).join('');
 
       const somaImp = itensImp.reduce((acc, i) => acc + Number(i.valor || 0), 0);
       document.getElementById('qtd-impressao').textContent = `Entregas no dia: ${itensImp.length}`;
