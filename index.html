@@ -23,9 +23,14 @@
     .field { display: flex; flex-direction: column; gap: 4px; }
     label { font-size: 0.85rem; font-weight: 600; }
     input, select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; }
+    
+    /* Força exibição em maiúsculo enquanto digita */
+    input[type="text"] { text-transform: uppercase; }
+    input[type="text"]::placeholder { text-transform: none; }
 
     .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
     button.primary { background: #2563eb; color: #fff; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    button.warning { background: #d97706; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
     button.print-today { background: #0f172a; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 700; }
     button.success { background: #15803d; color: #fff; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
     button.danger { background: #dc2626; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
@@ -35,15 +40,17 @@
     th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; font-size: 0.9rem; }
     th { background: #f8fafc; font-weight: 700; }
     .num { text-align: right; white-space: nowrap; }
+    .acoes-celula { display: flex; gap: 6px; white-space: nowrap; }
     .summary { margin-top: 12px; display: flex; justify-content: space-between; font-weight: 700; font-size: 1rem; }
     .feedback { font-size: 0.88rem; color: #15803d; font-weight: 600; }
+    .backup-box { margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
     .print-header { display: none; margin-bottom: 14px; }
 
     @media print {
       body { background: #fff; padding: 0; }
       .container { box-shadow: none; max-width: 100%; padding: 0; }
-      .top-bar, .tabs, .no-print, button.danger { display: none !important; }
+      .top-bar, .tabs, .no-print, button.danger, button.warning { display: none !important; }
       .tab-panel { display: none !important; }
       #tab-impressao { display: block !important; }
       .print-header { display: block; }
@@ -74,7 +81,8 @@
           </div>
           <div class="field">
             <label for="motorista">Nome do motorista *</label>
-            <input type="text" id="motorista" placeholder="Ex.: Carlos Souza" required />
+            <input type="text" id="motorista" list="lista-motoristas" placeholder="Ex.: Carlos Souza" required />
+            <datalist id="lista-motoristas"></datalist>
           </div>
           <div class="field">
             <label for="pedido">Número do pedido *</label>
@@ -94,7 +102,8 @@
           </div>
         </div>
         <div class="actions">
-          <button type="submit" class="primary">Adicionar ao romaneio</button>
+          <button type="submit" id="btn-salvar" class="primary">Adicionar ao romaneio</button>
+          <button type="button" id="btn-cancelar-edicao" class="secondary" style="display: none;">Cancelar edição</button>
           <button type="button" id="btn-limpar-dia" class="secondary">Limpar lançamentos da data</button>
         </div>
       </form>
@@ -108,7 +117,7 @@
             <th>Cliente</th>
             <th class="num">Valor</th>
             <th>Observação</th>
-            <th class="no-print">Ação</th>
+            <th class="no-print">Ações</th>
           </tr>
         </thead>
         <tbody id="tbody-cadastro"></tbody>
@@ -130,7 +139,7 @@
         <div class="field">
           <label for="filtro-motorista">Filtrar por motorista</label>
           <select id="filtro-motorista">
-            <option value="">Todos os motoristas</option>
+            <option value="">TODOS OS MOTORISTAS</option>
           </select>
         </div>
         <div class="field" style="justify-content: flex-end;">
@@ -142,7 +151,7 @@
       </div>
 
       <div class="print-header">
-        <h2 style="margin: 0 0 6px 0;">Romaneio Diário de Entrega</h2>
+        <h2 style="margin: 0 0 6px 0;">ROMANEIO DIÁRIO DE ENTREGA</h2>
         <div id="cabecalho-impresso"></div>
       </div>
 
@@ -206,11 +215,19 @@
         <span id="qtd-excel">Registros na prévia: 0</span>
         <span id="total-excel">Total: R$ 0,00</span>
       </div>
+
+      <div class="backup-box">
+        <strong>Segurança:</strong>
+        <button type="button" id="btn-backup-salvar" class="secondary">Salvar Backup (.json)</button>
+        <button type="button" id="btn-backup-restaurar" class="secondary">Restaurar Backup</button>
+        <input type="file" id="input-backup-arquivo" accept=".json" style="display: none;" />
+      </div>
     </section>
   </div>
 
   <script>
     const STORAGE_KEY = 'romaneio_entregas_v1';
+    let idEmEdicao = null;
 
     function obterDataHojeLocal() {
       const agora = new Date();
@@ -223,6 +240,14 @@
     const hoje = obterDataHojeLocal();
 
     const dataInput = document.getElementById('data');
+    const motoristaInput = document.getElementById('motorista');
+    const pedidoInput = document.getElementById('pedido');
+    const clienteInput = document.getElementById('cliente');
+    const valorInput = document.getElementById('valor');
+    const observacaoInput = document.getElementById('observacao');
+    const btnSalvar = document.getElementById('btn-salvar');
+    const btnCancelarEdicao = document.getElementById('btn-cancelar-edicao');
+
     const filtroData = document.getElementById('filtro-data');
     const filtroMotorista = document.getElementById('filtro-motorista');
     const excelPeriodo = document.getElementById('excel-periodo');
@@ -232,6 +257,16 @@
     dataInput.value = hoje;
     filtroData.value = hoje;
     excelData.value = hoje;
+
+    // Converte o valor real do campo para MAIÚSCULO enquanto digita (mantendo a posição do cursor)
+    [motoristaInput, pedidoInput, clienteInput, observacaoInput].forEach(campo => {
+      campo.addEventListener('input', function () {
+        const inicio = this.selectionStart;
+        const fim = this.selectionEnd;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(inicio, fim);
+      });
+    });
 
     function carregarItens() {
       try {
@@ -268,7 +303,6 @@
       });
     }
 
-    // Troca de abas
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         ativarAba(btn.dataset.tab);
@@ -276,7 +310,6 @@
       });
     });
 
-    // Imprimir sempre o dia de hoje
     function imprimirHoje() {
       const dataAtual = obterDataHojeLocal();
       filtroData.value = dataAtual;
@@ -289,30 +322,93 @@
     document.getElementById('btn-imprimir-hoje-topo').addEventListener('click', imprimirHoje);
     document.getElementById('btn-imprimir-hoje-aba').addEventListener('click', imprimirHoje);
 
-    // Adicionar item
+    function limparCamposPedido() {
+      pedidoInput.value = '';
+      clienteInput.value = '';
+      valorInput.value = '';
+      observacaoInput.value = '';
+      idEmEdicao = null;
+      btnSalvar.textContent = 'Adicionar ao romaneio';
+      btnCancelarEdicao.style.display = 'none';
+    }
+
+    btnCancelarEdicao.addEventListener('click', () => {
+      limparCamposPedido();
+      pedidoInput.focus();
+    });
+
+    // Adicionar ou salvar edição (garantindo texto em MAIÚSCULO)
     document.getElementById('form-romaneio').addEventListener('submit', e => {
       e.preventDefault();
       const itens = carregarItens();
-      itens.push({
-        id: Date.now(),
-        data: dataInput.value,
-        motorista: document.getElementById('motorista').value.trim(),
-        pedido: document.getElementById('pedido').value.trim(),
-        cliente: document.getElementById('cliente').value.trim(),
-        valor: parseFloat(document.getElementById('valor').value) || 0,
-        observacao: document.getElementById('observacao').value.trim()
-      });
-      salvarItens(itens);
+      const dataValor = dataInput.value;
+      const motoristaValor = motoristaInput.value.trim().toUpperCase();
+      const pedidoValor = pedidoInput.value.trim().toUpperCase();
+      const clienteValor = clienteInput.value.trim().toUpperCase();
+      const valorNum = parseFloat(valorInput.value) || 0;
+      const obsValor = observacaoInput.value.trim().toUpperCase();
 
-      document.getElementById('pedido').value = '';
-      document.getElementById('cliente').value = '';
-      document.getElementById('valor').value = '';
-      document.getElementById('observacao').value = '';
-      document.getElementById('pedido').focus();
+      const duplicado = itens.some(i =>
+        i.id !== idEmEdicao &&
+        i.data === dataValor &&
+        i.pedido.toUpperCase() === pedidoValor
+      );
+
+      if (duplicado) {
+        const confirmar = confirm(`O pedido "${pedidoValor}" já foi lançado na data ${formatarDataBR(dataValor)}. Deseja lançar mesmo assim?`);
+        if (!confirmar) return;
+      }
+
+      if (idEmEdicao !== null) {
+        const index = itens.findIndex(i => i.id === idEmEdicao);
+        if (index !== -1) {
+          itens[index] = {
+            ...itens[index],
+            data: dataValor,
+            motorista: motoristaValor,
+            pedido: pedidoValor,
+            cliente: clienteValor,
+            valor: valorNum,
+            observacao: obsValor
+          };
+        }
+      } else {
+        itens.push({
+          id: Date.now(),
+          data: dataValor,
+          motorista: motoristaValor,
+          pedido: pedidoValor,
+          cliente: clienteValor,
+          valor: valorNum,
+          observacao: obsValor
+        });
+      }
+
+      salvarItens(itens);
+      limparCamposPedido();
+      pedidoInput.focus();
       renderizar();
     });
 
+    function editarItem(id) {
+      const item = carregarItens().find(i => i.id === id);
+      if (!item) return;
+
+      idEmEdicao = item.id;
+      dataInput.value = item.data;
+      motoristaInput.value = (item.motorista || '').toUpperCase();
+      pedidoInput.value = (item.pedido || '').toUpperCase();
+      clienteInput.value = (item.cliente || '').toUpperCase();
+      valorInput.value = item.valor;
+      observacaoInput.value = (item.observacao || '').toUpperCase();
+
+      btnSalvar.textContent = 'Salvar edição';
+      btnCancelarEdicao.style.display = 'inline-block';
+      pedidoInput.focus();
+    }
+
     function excluirItem(id) {
+      if (idEmEdicao === id) limparCamposPedido();
       const itens = carregarItens().filter(item => item.id !== id);
       salvarItens(itens);
       renderizar();
@@ -320,6 +416,8 @@
 
     document.getElementById('btn-limpar-dia').addEventListener('click', () => {
       const dataAlvo = dataInput.value;
+      if (!confirm(`Apagar todos os lançamentos do dia ${formatarDataBR(dataAlvo)}?`)) return;
+      limparCamposPedido();
       const restantes = carregarItens().filter(item => item.data !== dataAlvo);
       salvarItens(restantes);
       renderizar();
@@ -337,7 +435,6 @@
       return itens.filter(i => i.data === excelData.value);
     }
 
-    // Baixar CSV compatível com Excel PT-BR
     document.getElementById('btn-baixar-csv').addEventListener('click', () => {
       const itens = obterItensExcel();
       const feedback = document.getElementById('excel-feedback');
@@ -347,14 +444,14 @@
         return;
       }
 
-      const cabecalho = ['Data', 'Motorista', 'Numero_Pedido', 'Cliente', 'Valor_Compra', 'Observacao'];
+      const cabecalho = ['DATA', 'MOTORISTA', 'NUMERO_PEDIDO', 'CLIENTE', 'VALOR_COMPRA', 'OBSERVACAO'];
       const linhas = itens.map(i => [
         formatarDataBR(i.data),
-        i.motorista,
-        i.pedido,
-        i.cliente,
+        (i.motorista || '').toUpperCase(),
+        (i.pedido || '').toUpperCase(),
+        (i.cliente || '').toUpperCase(),
         formatarValorExcel(i.valor),
-        i.observacao || ''
+        (i.observacao || '').toUpperCase()
       ].map(campo => `"${String(campo).replace(/"/g, '""')}"`).join(';'));
 
       const csvConteudo = '\uFEFF' + [cabecalho.join(';'), ...linhas].join('\r\n');
@@ -375,7 +472,6 @@
       setTimeout(() => { feedback.textContent = ''; }, 4000);
     });
 
-    // Copiar separado por TAB para colar no Excel
     document.getElementById('btn-copiar-tabela').addEventListener('click', async () => {
       const itens = obterItensExcel();
       const feedback = document.getElementById('excel-feedback');
@@ -385,19 +481,54 @@
         return;
       }
 
-      const cabecalho = ['Data', 'Motorista', 'Nº Pedido', 'Cliente', 'Valor da Compra', 'Observação'].join('\t');
+      const cabecalho = ['DATA', 'MOTORISTA', 'Nº PEDIDO', 'CLIENTE', 'VALOR DA COMPRA', 'OBSERVAÇÃO'].join('\t');
       const linhas = itens.map(i => [
         formatarDataBR(i.data),
-        i.motorista,
-        i.pedido,
-        i.cliente,
+        (i.motorista || '').toUpperCase(),
+        (i.pedido || '').toUpperCase(),
+        (i.cliente || '').toUpperCase(),
         formatarValorExcel(i.valor),
-        (i.observacao || '').replace(/\s+/g, ' ')
+        (i.observacao || '').toUpperCase().replace(/\s+/g, ' ')
       ].join('\t'));
 
       await navigator.clipboard.writeText([cabecalho, ...linhas].join('\n'));
       feedback.textContent = 'Copiado! Abra o Excel e pressione Ctrl + V.';
       setTimeout(() => { feedback.textContent = ''; }, 4000);
+    });
+
+    document.getElementById('btn-backup-salvar').addEventListener('click', () => {
+      const itens = carregarItens();
+      const blob = new Blob([JSON.stringify(itens, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup_romaneio_${obterDataHojeLocal()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    const inputBackup = document.getElementById('input-backup-arquivo');
+    document.getElementById('btn-backup-restaurar').addEventListener('click', () => {
+      inputBackup.click();
+    });
+
+    inputBackup.addEventListener('change', e => {
+      const arquivo = e.target.files[0];
+      if (!arquivo) return;
+      const leitor = new FileReader();
+      leitor.onload = ev => {
+        try {
+          const dados = JSON.parse(ev.target.result);
+          if (!Array.isArray(dados)) throw new Error('Formato inválido');
+          salvarItens(dados);
+          renderizar();
+          alert(`Backup restaurado com sucesso (${dados.length} registros)!`);
+        } catch {
+          alert('Arquivo de backup inválido.');
+        }
+        inputBackup.value = '';
+      };
+      leitor.readAsText(arquivo);
     });
 
     dataInput.addEventListener('change', renderizar);
@@ -412,17 +543,26 @@
     function renderizar() {
       const itens = carregarItens();
 
+      const todosMotoristas = [...new Set(itens.map(i => (i.motorista || '').toUpperCase()).filter(Boolean))].sort();
+      document.getElementById('lista-motoristas').innerHTML =
+        todosMotoristas.map(m => `<option value="${m}"></option>`).join('');
+
       // Aba 1: Cadastro
       const itensCadastro = itens.filter(i => i.data === dataInput.value);
       document.getElementById('tbody-cadastro').innerHTML = itensCadastro.map(item => `
         <tr>
           <td>${formatarDataBR(item.data)}</td>
-          <td>${item.motorista}</td>
-          <td>${item.pedido}</td>
-          <td>${item.cliente}</td>
+          <td>${(item.motorista || '').toUpperCase()}</td>
+          <td>${(item.pedido || '').toUpperCase()}</td>
+          <td>${(item.cliente || '').toUpperCase()}</td>
           <td class="num">${formatarMoeda(item.valor)}</td>
-          <td>${item.observacao || '-'}</td>
-          <td class="no-print"><button class="danger" onclick="excluirItem(${item.id})">Excluir</button></td>
+          <td>${(item.observacao || '-').toUpperCase()}</td>
+          <td class="no-print">
+            <div class="acoes-celula">
+              <button type="button" class="warning" onclick="editarItem(${item.id})">Editar</button>
+              <button type="button" class="danger" onclick="excluirItem(${item.id})">Excluir</button>
+            </div>
+          </td>
         </tr>
       `).join('');
 
@@ -432,25 +572,25 @@
 
       // Aba 2: Impressão Diária
       const motoristasDia = [...new Set(
-        itens.filter(i => i.data === filtroData.value).map(i => i.motorista).filter(Boolean)
+        itens.filter(i => i.data === filtroData.value).map(i => (i.motorista || '').toUpperCase()).filter(Boolean)
       )];
       const motoristaAtual = filtroMotorista.value;
-      filtroMotorista.innerHTML = `<option value="">Todos os motoristas</option>` +
+      filtroMotorista.innerHTML = `<option value="">TODOS OS MOTORISTAS</option>` +
         motoristasDia.map(m => `<option value="${m}">${m}</option>`).join('');
       filtroMotorista.value = motoristasDia.includes(motoristaAtual) ? motoristaAtual : '';
 
       const itensImp = itens.filter(i =>
         i.data === filtroData.value &&
-        (!filtroMotorista.value || i.motorista === filtroMotorista.value)
+        (!filtroMotorista.value || (i.motorista || '').toUpperCase() === filtroMotorista.value)
       );
 
       document.getElementById('tbody-impressao').innerHTML = itensImp.map(item => `
         <tr>
-          <td>${item.pedido}</td>
-          <td>${item.motorista}</td>
-          <td>${item.cliente}</td>
+          <td>${(item.pedido || '').toUpperCase()}</td>
+          <td>${(item.motorista || '').toUpperCase()}</td>
+          <td>${(item.cliente || '').toUpperCase()}</td>
           <td class="num">${formatarMoeda(item.valor)}</td>
-          <td>${item.observacao || '-'}</td>
+          <td>${(item.observacao || '-').toUpperCase()}</td>
           <td style="min-width: 140px;"></td>
         </tr>
       `).join('');
@@ -459,18 +599,18 @@
       document.getElementById('qtd-impressao').textContent = `Entregas no dia: ${itensImp.length}`;
       document.getElementById('total-impressao').textContent = `Total do romaneio: ${formatarMoeda(somaImp)}`;
       document.getElementById('cabecalho-impresso').textContent =
-        `Data: ${formatarDataBR(filtroData.value)} | Motorista: ${filtroMotorista.value || 'Todos'}`;
+        `DATA: ${formatarDataBR(filtroData.value)} | MOTORISTA: ${filtroMotorista.value || 'TODOS'}`;
 
       // Aba 3: Exportar para Excel
       const itensExcel = obterItensExcel();
       document.getElementById('tbody-excel').innerHTML = itensExcel.map(item => `
         <tr>
           <td>${formatarDataBR(item.data)}</td>
-          <td>${item.motorista}</td>
-          <td>${item.pedido}</td>
-          <td>${item.cliente}</td>
+          <td>${(item.motorista || '').toUpperCase()}</td>
+          <td>${(item.pedido || '').toUpperCase()}</td>
+          <td>${(item.cliente || '').toUpperCase()}</td>
           <td class="num">${formatarValorExcel(item.valor)}</td>
-          <td>${item.observacao || ''}</td>
+          <td>${(item.observacao || '').toUpperCase()}</td>
         </tr>
       `).join('');
 
