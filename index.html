@@ -62,6 +62,8 @@
     .status-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .badge { font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
     .badge-saved { background: #dcfce7; color: #166534; }
+    .badge-syncing { background: #dbeafe; color: #1e40af; }
+    .badge-offline { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
     .badge-backup-ok { background: #e0f2fe; color: #075985; }
     .badge-backup-warn { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
     .badge-turno { font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; display: inline-block; }
@@ -196,11 +198,13 @@
       <div class="title-area">
         <h1>Romaneio de Entrega</h1>
         <div class="status-badges">
+          <span id="badge-nuvem" class="badge badge-syncing">🔄 Conectando à nuvem...</span>
           <span id="badge-salvo" class="badge badge-saved" style="display: none;">✓ Salvo</span>
           <span id="badge-backup" class="badge badge-backup-warn">Sem backup ainda</span>
         </div>
       </div>
       <div class="top-actions">
+        <button type="button" id="btn-sincronizar" class="secondary" title="Buscar atualizações do banco na nuvem">🔄 Atualizar Nuvem</button>
         <button type="button" id="btn-tema" class="secondary" title="Alternar modo claro/escuro">🌙 Modo Escuro</button>
         <button type="button" id="btn-imprimir-hoje-topo" class="print-today" title="Atalho: Ctrl + P">🖨️ Imprimir o Dia (Hoje)</button>
       </div>
@@ -520,6 +524,12 @@
   </div>
 
   <script>
+    // ================= CONFIGURAÇÃO SUPABASE =================
+    const SUPABASE_REST_URL = 'https://iqfcyxuhqnluucifylqn.supabase.co/rest/v1';
+    const SUPABASE_API_KEY = 'sb_publishable_PSTBZr3SnTxlmCqxFth3Pw_3LLr38Gb';
+    const SUPABASE_TABLE = 'romaneios';
+
+    // ================= CONFIGURAÇÃO CACHE LOCAL (INDEXEDDB) =================
     const DB_NAME = 'RomaneioEntregasDB';
     const DB_VERSION = 1;
     const STORE_NAME = 'entregas';
@@ -565,6 +575,7 @@
     const observacaoInput = document.getElementById('observacao');
     const buscaRapidaInput = document.getElementById('busca-rapida');
     const btnUndo = document.getElementById('btn-undo');
+    const badgeNuvem = document.getElementById('badge-nuvem');
 
     const turnoAbaData = document.getElementById('turno-aba-data');
     const turnoAbaFiltro = document.getElementById('turno-aba-filtro');
@@ -609,6 +620,20 @@
       localStorage.setItem(META_DARK_MODE, novoEstado ? '1' : '0');
       aplicarTema(novoEstado);
     });
+
+    function atualizarStatusNuvem(estado, texto) {
+      badgeNuvem.className = 'badge';
+      if (estado === 'ok') {
+        badgeNuvem.classList.add('badge-saved');
+        badgeNuvem.textContent = texto || '☁️ Nuvem sincronizada';
+      } else if (estado === 'syncing') {
+        badgeNuvem.classList.add('badge-syncing');
+        badgeNuvem.textContent = texto || '🔄 Sincronizando...';
+      } else {
+        badgeNuvem.classList.add('badge-offline');
+        badgeNuvem.textContent = texto || '⚠️ Offline (salvo no cache local)';
+      }
+    }
 
     function formatarMoeda(valor) {
       return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -718,6 +743,78 @@
       `;
     }
 
+    // ================= CAMADA SUPABASE REST API =================
+    function headersSupabase(extra = {}) {
+      return {
+        'apikey': SUPABASE_API_KEY,
+        'Authorization': `Bearer ${SUPABASE_API_KEY}`,
+        'Content-Type': 'application/json',
+        ...extra
+      };
+    }
+
+    function mapearLinhaBancoParaApp(row) {
+      return {
+        id: Number(row.id),
+        data: row.data,
+        turno: normalizarTurno(row.turno),
+        motorista: (row.motorista || '').toUpperCase(),
+        pedido: (row.pedido || '').toUpperCase(),
+        cliente: (row.cliente || '').toUpperCase(),
+        valor: Number(row.valor || 0),
+        observacao: (row.observacao || '').toUpperCase(),
+        statusEntrega: normalizarStatusEntrega(row.status_entrega),
+        motivoNaoEntrega: (row.motivo_nao_entrega || '').toUpperCase()
+      };
+    }
+
+    function mapearItemAppParaBanco(item) {
+      return {
+        id: Number(item.id),
+        data: item.data,
+        turno: normalizarTurno(item.turno),
+        motorista: (item.motorista || '').toUpperCase(),
+        pedido: (item.pedido || '').toUpperCase(),
+        cliente: (item.cliente || '').toUpperCase(),
+        valor: Number(item.valor || 0),
+        observacao: (item.observacao || '').toUpperCase(),
+        status_entrega: normalizarStatusEntrega(item.statusEntrega),
+        motivo_nao_entrega: (item.motivoNaoEntrega || '').toUpperCase()
+      };
+    }
+
+    async function buscarTodosSupabase() {
+      const resp = await fetch(`${SUPABASE_REST_URL}/${SUPABASE_TABLE}?select=*&order=id.asc`, {
+        method: 'GET',
+        headers: headersSupabase()
+      });
+      if (!resp.ok) throw new Error(`Erro Supabase GET: ${resp.status}`);
+      const rows = await resp.json();
+      return rows.map(mapearLinhaBancoParaApp);
+    }
+
+    async function upsertSupabase(listaItens) {
+      if (!listaItens || !listaItens.length) return;
+      const payload = listaItens.map(mapearItemAppParaBanco);
+      const resp = await fetch(`${SUPABASE_REST_URL}/${SUPABASE_TABLE}?on_conflict=id`, {
+        method: 'POST',
+        headers: headersSupabase({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) throw new Error(`Erro Supabase UPSERT: ${resp.status}`);
+    }
+
+    async function deletarPorIdsSupabase(ids) {
+      if (!ids || !ids.length) return;
+      const filtroIds = `(${ids.join(',')})`;
+      const resp = await fetch(`${SUPABASE_REST_URL}/${SUPABASE_TABLE}?id=in.${filtroIds}`, {
+        method: 'DELETE',
+        headers: headersSupabase()
+      });
+      if (!resp.ok) throw new Error(`Erro Supabase DELETE: ${resp.status}`);
+    }
+
+    // ================= CAMADA INDEXEDDB (CACHE OFFLINE) =================
     function abrirBanco() {
       return new Promise((resolve, reject) => {
         const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -756,26 +853,52 @@
       });
     }
 
+    async function sincronizarComNuvem(silencioso = false) {
+      if (!silencioso) atualizarStatusNuvem('syncing', '🔄 Sincronizando...');
+      try {
+        const dadosNuvem = await buscarTodosSupabase();
+        // Se a nuvem estiver vazia mas houver dados locais novos, sobe os locais primeiro
+        if (dadosNuvem.length === 0 && itensCache.length > 0) {
+          await upsertSupabase(itensCache);
+        } else {
+          itensCache = dadosNuvem;
+          await gravarTodosIndexedDB(itensCache);
+        }
+        atualizarStatusNuvem('ok', '☁️ Nuvem sincronizada');
+        atualizarBadgeBackup();
+        renderizar();
+      } catch (err) {
+        console.warn('Falha ao sincronizar com Supabase:', err);
+        atualizarStatusNuvem('offline', '⚠️ Offline (usando cache local)');
+      }
+    }
+
     async function inicializarDados() {
       await abrirBanco();
-      let dados = await lerTodosIndexedDB();
+      let dadosLocais = await lerTodosIndexedDB();
 
       const legadoRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
       if (legadoRaw) {
         try {
           const legado = JSON.parse(legadoRaw);
-          if (Array.isArray(legado) && legado.length > 0 && dados.length === 0) {
-            dados = legado;
-            await gravarTodosIndexedDB(dados);
+          if (Array.isArray(legado) && legado.length > 0 && dadosLocais.length === 0) {
+            dadosLocais = legado;
+            await gravarTodosIndexedDB(dadosLocais);
           }
           localStorage.removeItem(LEGACY_STORAGE_KEY);
         } catch { /* ignora erro legado */ }
       }
 
-      itensCache = dados;
+      itensCache = dadosLocais;
       atualizarBadgeBackup();
       renderizar();
+
+      await sincronizarComNuvem(false);
     }
+
+    document.getElementById('btn-sincronizar').addEventListener('click', () => {
+      sincronizarComNuvem(false);
+    });
 
     function marcarSalvo() {
       const badge = document.getElementById('badge-salvo');
@@ -791,17 +914,17 @@
 
       if (!ultimoTs) {
         badge.className = 'badge badge-backup-warn';
-        badge.textContent = itensCache.length ? '⚠️ Nenhum backup feito' : 'Backup em dia';
+        badge.textContent = itensCache.length ? '⚠️ Nenhum backup JSON' : 'Backup em dia';
         return;
       }
 
       const dias = Math.floor((Date.now() - ultimoTs) / (1000 * 60 * 60 * 24));
       if (dias >= 3) {
         badge.className = 'badge badge-backup-warn';
-        badge.textContent = `⚠️ Último backup há ${dias} dia(s)`;
+        badge.textContent = `⚠️ Último JSON há ${dias} dia(s)`;
       } else {
         badge.className = 'badge badge-backup-ok';
-        badge.textContent = dias === 0 ? '✓ Backup feito hoje' : `✓ Backup há ${dias} dia(s)`;
+        badge.textContent = dias === 0 ? '✓ Backup JSON hoje' : `✓ JSON há ${dias} dia(s)`;
       }
     }
 
@@ -823,13 +946,34 @@
     }
 
     async function persistirAlteracoes(novoArray, registrarUndo = false) {
+      const arrayAnterior = [...itensCache];
       if (registrarUndo) {
-        ultimoEstadoUndo = JSON.parse(JSON.stringify(itensCache));
+        ultimoEstadoUndo = JSON.parse(JSON.stringify(arrayAnterior));
         btnUndo.style.display = 'inline-block';
       }
+
       itensCache = novoArray;
       await gravarTodosIndexedDB(itensCache);
       marcarSalvo();
+      renderizar();
+
+      // Sincroniza diferença com Supabase
+      atualizarStatusNuvem('syncing', '🔄 Salvando na nuvem...');
+      try {
+        const idsNovos = new Set(novoArray.map(i => i.id));
+        const idsRemovidos = arrayAnterior.filter(i => !idsNovos.has(i.id)).map(i => i.id);
+
+        if (idsRemovidos.length > 0) {
+          await deletarPorIdsSupabase(idsRemovidos);
+        }
+        if (novoArray.length > 0) {
+          await upsertSupabase(novoArray);
+        }
+        atualizarStatusNuvem('ok', '☁️ Nuvem sincronizada');
+      } catch (err) {
+        console.warn('Erro ao salvar no Supabase:', err);
+        atualizarStatusNuvem('offline', '⚠️ Salvo local (falha na nuvem)');
+      }
 
       const alteracoes = Number(localStorage.getItem(META_CHANGES_COUNT) || 0) + 1;
       localStorage.setItem(META_CHANGES_COUNT, String(alteracoes));
@@ -838,8 +982,6 @@
       } else {
         atualizarBadgeBackup();
       }
-
-      renderizar();
     }
 
     btnUndo.addEventListener('click', async () => {
@@ -1496,7 +1638,7 @@
 
       const somaImp = itensImp.reduce((acc, i) => acc + Number(i.valor || 0), 0);
       document.getElementById('qtd-impressao').textContent = `Entregas no dia: ${itensImp.length}`;
-      document.getElementById('total-impressao').textContent = `Total do romaneio: ${formatarMoeda(somaImp)}`;
+      document.getElementById('total-impressao').textContent = `Total do romaneio: R$ 0,00`.replace('R$ 0,00', formatarMoeda(somaImp));
 
       const empresaTitulo = nomeEmpresaInput.value.trim() || 'CONTROLE DE ROMANEIO DE ENTREGA';
       document.getElementById('print-empresa-titulo').textContent = empresaTitulo;
