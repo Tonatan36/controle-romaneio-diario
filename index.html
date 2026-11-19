@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Romaneio de Entrega</title>
+  <style>
+    * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
+    body { margin: 0; padding: 20px; background: #f4f6f8; color: #1f2937; }
+    .container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    
+    .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    h1 { margin: 0; font-size: 1.5rem; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; flex-wrap: wrap; }
+    .tab-btn { padding: 8px 16px; border: 1px solid #d1d5db; background: #f9fafb; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .tab-btn.active { background: #111827; color: #fff; border-color: #111827; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    label { font-size: 0.85rem; font-weight: 600; }
+    input, select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; }
+
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+    button.primary { background: #2563eb; color: #fff; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    button.print-today { background: #0f172a; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 700; }
+    button.success { background: #15803d; color: #fff; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    button.danger { background: #dc2626; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+    button.secondary { background: #e5e7eb; color: #111827; border: none; padding: 9px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; font-size: 0.9rem; }
+    th { background: #f8fafc; font-weight: 700; }
+    .num { text-align: right; white-space: nowrap; }
+    .summary { margin-top: 12px; display: flex; justify-content: space-between; font-weight: 700; font-size: 1rem; }
+    .feedback { font-size: 0.88rem; color: #15803d; font-weight: 600; }
+
+    .print-header { display: none; margin-bottom: 14px; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .container { box-shadow: none; max-width: 100%; padding: 0; }
+      .top-bar, .tabs, .no-print, button.danger { display: none !important; }
+      .tab-panel { display: none !important; }
+      #tab-impressao { display: block !important; }
+      .print-header { display: block; }
+      th, td { border: 1px solid #000; padding: 6px 8px; font-size: 0.85rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar no-print">
+      <h1>Romaneio de Entrega</h1>
+      <button type="button" id="btn-imprimir-hoje-topo" class="print-today">🖨️ Imprimir o Dia (Hoje)</button>
+    </div>
+
+    <div class="tabs no-print">
+      <button class="tab-btn active" data-tab="tab-cadastro">1. Lançar / Romaneio</button>
+      <button class="tab-btn" data-tab="tab-impressao">2. Impressão Diária</button>
+      <button class="tab-btn" data-tab="tab-excel">3. Exportar para Excel</button>
+    </div>
+
+    <!-- ABA 1: LANÇAMENTO -->
+    <section id="tab-cadastro" class="tab-panel active">
+      <form id="form-romaneio">
+        <div class="form-grid">
+          <div class="field">
+            <label for="data">Data *</label>
+            <input type="date" id="data" required />
+          </div>
+          <div class="field">
+            <label for="motorista">Nome do motorista *</label>
+            <input type="text" id="motorista" placeholder="Ex.: Carlos Souza" required />
+          </div>
+          <div class="field">
+            <label for="pedido">Número do pedido *</label>
+            <input type="text" id="pedido" placeholder="Ex.: 4589" required />
+          </div>
+          <div class="field">
+            <label for="cliente">Cliente *</label>
+            <input type="text" id="cliente" placeholder="Nome do cliente / obra" required />
+          </div>
+          <div class="field">
+            <label for="valor">Valor da compra (R$) *</label>
+            <input type="number" id="valor" step="0.01" min="0" placeholder="0,00" required />
+          </div>
+          <div class="field">
+            <label for="observacao">Observação</label>
+            <input type="text" id="observacao" placeholder="Ex.: Ligar antes, entrega de manhã" />
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="primary">Adicionar ao romaneio</button>
+          <button type="button" id="btn-limpar-dia" class="secondary">Limpar lançamentos da data</button>
+        </div>
+      </form>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Motorista</th>
+            <th>Nº Pedido</th>
+            <th>Cliente</th>
+            <th class="num">Valor</th>
+            <th>Observação</th>
+            <th class="no-print">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-cadastro"></tbody>
+      </table>
+
+      <div class="summary">
+        <span id="qtd-cadastro">Total de pedidos: 0</span>
+        <span id="total-cadastro">Valor total: R$ 0,00</span>
+      </div>
+    </section>
+
+    <!-- ABA 2: IMPRESSÃO DIÁRIA -->
+    <section id="tab-impressao" class="tab-panel">
+      <div class="form-grid no-print">
+        <div class="field">
+          <label for="filtro-data">Data do romaneio</label>
+          <input type="date" id="filtro-data" />
+        </div>
+        <div class="field">
+          <label for="filtro-motorista">Filtrar por motorista</label>
+          <select id="filtro-motorista">
+            <option value="">Todos os motoristas</option>
+          </select>
+        </div>
+        <div class="field" style="justify-content: flex-end;">
+          <button type="button" id="btn-imprimir-hoje-aba" class="print-today">🖨️ Imprimir o Dia (Hoje)</button>
+        </div>
+        <div class="field" style="justify-content: flex-end;">
+          <button type="button" id="btn-imprimir" class="primary">Imprimir filtro selecionado</button>
+        </div>
+      </div>
+
+      <div class="print-header">
+        <h2 style="margin: 0 0 6px 0;">Romaneio Diário de Entrega</h2>
+        <div id="cabecalho-impresso"></div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Nº Pedido</th>
+            <th>Motorista</th>
+            <th>Cliente</th>
+            <th class="num">Valor</th>
+            <th>Observação</th>
+            <th>Assinatura / Conferência</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-impressao"></tbody>
+      </table>
+
+      <div class="summary">
+        <span id="qtd-impressao">Entregas no dia: 0</span>
+        <span id="total-impressao">Total do romaneio: R$ 0,00</span>
+      </div>
+    </section>
+
+    <!-- ABA 3: EXPORTAR PARA EXCEL -->
+    <section id="tab-excel" class="tab-panel">
+      <div class="form-grid">
+        <div class="field">
+          <label for="excel-periodo">Período para exportar</label>
+          <select id="excel-periodo">
+            <option value="dia">Somente a data selecionada</option>
+            <option value="todos">Todos os registros salvos</option>
+          </select>
+        </div>
+        <div class="field" id="campo-excel-data">
+          <label for="excel-data">Data</label>
+          <input type="date" id="excel-data" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" id="btn-baixar-csv" class="success">Baixar arquivo para Excel (.csv)</button>
+        <button type="button" id="btn-copiar-tabela" class="secondary">Copiar tabela para colar no Excel</button>
+        <span id="excel-feedback" class="feedback"></span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Motorista</th>
+            <th>Nº Pedido</th>
+            <th>Cliente</th>
+            <th class="num">Valor (R$)</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-excel"></tbody>
+      </table>
+
+      <div class="summary">
+        <span id="qtd-excel">Registros na prévia: 0</span>
+        <span id="total-excel">Total: R$ 0,00</span>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'romaneio_entregas_v1';
+
+    function obterDataHojeLocal() {
+      const agora = new Date();
+      const ano = agora.getFullYear();
+      const mes = String(agora.getMonth() + 1).padStart(2, '0');
+      const dia = String(agora.getDate()).padStart(2, '0');
+      return `${ano}-${mes}-${dia}`;
+    }
+
+    const hoje = obterDataHojeLocal();
+
+    const dataInput = document.getElementById('data');
+    const filtroData = document.getElementById('filtro-data');
+    const filtroMotorista = document.getElementById('filtro-motorista');
+    const excelPeriodo = document.getElementById('excel-periodo');
+    const excelData = document.getElementById('excel-data');
+    const campoExcelData = document.getElementById('campo-excel-data');
+
+    dataInput.value = hoje;
+    filtroData.value = hoje;
+    excelData.value = hoje;
+
+    function carregarItens() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function salvarItens(itens) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(itens));
+    }
+
+    function formatarMoeda(valor) {
+      return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function formatarValorExcel(valor) {
+      return Number(valor || 0).toFixed(2).replace('.', ',');
+    }
+
+    function formatarDataBR(isoDate) {
+      if (!isoDate) return '';
+      const [ano, mes, dia] = isoDate.split('-');
+      return `${dia}/${mes}/${ano}`;
+    }
+
+    function ativarAba(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === tabId);
+      });
+      document.querySelectorAll('.tab-panel').forEach(p => {
+        p.classList.toggle('active', p.id === tabId);
+      });
+    }
+
+    // Troca de abas
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ativarAba(btn.dataset.tab);
+        renderizar();
+      });
+    });
+
+    // Imprimir sempre o dia de hoje
+    function imprimirHoje() {
+      const dataAtual = obterDataHojeLocal();
+      filtroData.value = dataAtual;
+      filtroMotorista.value = '';
+      ativarAba('tab-impressao');
+      renderizar();
+      window.print();
+    }
+
+    document.getElementById('btn-imprimir-hoje-topo').addEventListener('click', imprimirHoje);
+    document.getElementById('btn-imprimir-hoje-aba').addEventListener('click', imprimirHoje);
+
+    // Adicionar item
+    document.getElementById('form-romaneio').addEventListener('submit', e => {
+      e.preventDefault();
+      const itens = carregarItens();
+      itens.push({
+        id: Date.now(),
+        data: dataInput.value,
+        motorista: document.getElementById('motorista').value.trim(),
+        pedido: document.getElementById('pedido').value.trim(),
+        cliente: document.getElementById('cliente').value.trim(),
+        valor: parseFloat(document.getElementById('valor').value) || 0,
+        observacao: document.getElementById('observacao').value.trim()
+      });
+      salvarItens(itens);
+
+      document.getElementById('pedido').value = '';
+      document.getElementById('cliente').value = '';
+      document.getElementById('valor').value = '';
+      document.getElementById('observacao').value = '';
+      document.getElementById('pedido').focus();
+      renderizar();
+    });
+
+    function excluirItem(id) {
+      const itens = carregarItens().filter(item => item.id !== id);
+      salvarItens(itens);
+      renderizar();
+    }
+
+    document.getElementById('btn-limpar-dia').addEventListener('click', () => {
+      const dataAlvo = dataInput.value;
+      const restantes = carregarItens().filter(item => item.data !== dataAlvo);
+      salvarItens(restantes);
+      renderizar();
+    });
+
+    document.getElementById('btn-imprimir').addEventListener('click', () => {
+      window.print();
+    });
+
+    function obterItensExcel() {
+      const itens = carregarItens();
+      if (excelPeriodo.value === 'todos') {
+        return [...itens].sort((a, b) => a.data.localeCompare(b.data));
+      }
+      return itens.filter(i => i.data === excelData.value);
+    }
+
+    // Baixar CSV compatível com Excel PT-BR
+    document.getElementById('btn-baixar-csv').addEventListener('click', () => {
+      const itens = obterItensExcel();
+      const feedback = document.getElementById('excel-feedback');
+
+      if (!itens.length) {
+        feedback.textContent = 'Nenhum registro encontrado para exportar.';
+        return;
+      }
+
+      const cabecalho = ['Data', 'Motorista', 'Numero_Pedido', 'Cliente', 'Valor_Compra', 'Observacao'];
+      const linhas = itens.map(i => [
+        formatarDataBR(i.data),
+        i.motorista,
+        i.pedido,
+        i.cliente,
+        formatarValorExcel(i.valor),
+        i.observacao || ''
+      ].map(campo => `"${String(campo).replace(/"/g, '""')}"`).join(';'));
+
+      const csvConteudo = '\uFEFF' + [cabecalho.join(';'), ...linhas].join('\r\n');
+      const blob = new Blob([csvConteudo], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+
+      const nomeArquivo = excelPeriodo.value === 'todos'
+        ? 'romaneio_completo.csv'
+        : `romaneio_${excelData.value}.csv`;
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = nomeArquivo;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      feedback.textContent = `Arquivo "${nomeArquivo}" baixado!`;
+      setTimeout(() => { feedback.textContent = ''; }, 4000);
+    });
+
+    // Copiar separado por TAB para colar no Excel
+    document.getElementById('btn-copiar-tabela').addEventListener('click', async () => {
+      const itens = obterItensExcel();
+      const feedback = document.getElementById('excel-feedback');
+
+      if (!itens.length) {
+        feedback.textContent = 'Nenhum registro para copiar.';
+        return;
+      }
+
+      const cabecalho = ['Data', 'Motorista', 'Nº Pedido', 'Cliente', 'Valor da Compra', 'Observação'].join('\t');
+      const linhas = itens.map(i => [
+        formatarDataBR(i.data),
+        i.motorista,
+        i.pedido,
+        i.cliente,
+        formatarValorExcel(i.valor),
+        (i.observacao || '').replace(/\s+/g, ' ')
+      ].join('\t'));
+
+      await navigator.clipboard.writeText([cabecalho, ...linhas].join('\n'));
+      feedback.textContent = 'Copiado! Abra o Excel e pressione Ctrl + V.';
+      setTimeout(() => { feedback.textContent = ''; }, 4000);
+    });
+
+    dataInput.addEventListener('change', renderizar);
+    filtroData.addEventListener('change', renderizar);
+    filtroMotorista.addEventListener('change', renderizar);
+    excelPeriodo.addEventListener('change', () => {
+      campoExcelData.style.display = excelPeriodo.value === 'todos' ? 'none' : 'flex';
+      renderizar();
+    });
+    excelData.addEventListener('change', renderizar);
+
+    function renderizar() {
+      const itens = carregarItens();
+
+      // Aba 1: Cadastro
+      const itensCadastro = itens.filter(i => i.data === dataInput.value);
+      document.getElementById('tbody-cadastro').innerHTML = itensCadastro.map(item => `
+        <tr>
+          <td>${formatarDataBR(item.data)}</td>
+          <td>${item.motorista}</td>
+          <td>${item.pedido}</td>
+          <td>${item.cliente}</td>
+          <td class="num">${formatarMoeda(item.valor)}</td>
+          <td>${item.observacao || '-'}</td>
+          <td class="no-print"><button class="danger" onclick="excluirItem(${item.id})">Excluir</button></td>
+        </tr>
+      `).join('');
+
+      const somaCad = itensCadastro.reduce((acc, i) => acc + Number(i.valor || 0), 0);
+      document.getElementById('qtd-cadastro').textContent = `Total de pedidos: ${itensCadastro.length}`;
+      document.getElementById('total-cadastro').textContent = `Valor total: ${formatarMoeda(somaCad)}`;
+
+      // Aba 2: Impressão Diária
+      const motoristasDia = [...new Set(
+        itens.filter(i => i.data === filtroData.value).map(i => i.motorista).filter(Boolean)
+      )];
+      const motoristaAtual = filtroMotorista.value;
+      filtroMotorista.innerHTML = `<option value="">Todos os motoristas</option>` +
+        motoristasDia.map(m => `<option value="${m}">${m}</option>`).join('');
+      filtroMotorista.value = motoristasDia.includes(motoristaAtual) ? motoristaAtual : '';
+
+      const itensImp = itens.filter(i =>
+        i.data === filtroData.value &&
+        (!filtroMotorista.value || i.motorista === filtroMotorista.value)
+      );
+
+      document.getElementById('tbody-impressao').innerHTML = itensImp.map(item => `
+        <tr>
+          <td>${item.pedido}</td>
+          <td>${item.motorista}</td>
+          <td>${item.cliente}</td>
+          <td class="num">${formatarMoeda(item.valor)}</td>
+          <td>${item.observacao || '-'}</td>
+          <td style="min-width: 140px;"></td>
+        </tr>
+      `).join('');
+
+      const somaImp = itensImp.reduce((acc, i) => acc + Number(i.valor || 0), 0);
+      document.getElementById('qtd-impressao').textContent = `Entregas no dia: ${itensImp.length}`;
+      document.getElementById('total-impressao').textContent = `Total do romaneio: ${formatarMoeda(somaImp)}`;
+      document.getElementById('cabecalho-impresso').textContent =
+        `Data: ${formatarDataBR(filtroData.value)} | Motorista: ${filtroMotorista.value || 'Todos'}`;
+
+      // Aba 3: Exportar para Excel
+      const itensExcel = obterItensExcel();
+      document.getElementById('tbody-excel').innerHTML = itensExcel.map(item => `
+        <tr>
+          <td>${formatarDataBR(item.data)}</td>
+          <td>${item.motorista}</td>
+          <td>${item.pedido}</td>
+          <td>${item.cliente}</td>
+          <td class="num">${formatarValorExcel(item.valor)}</td>
+          <td>${item.observacao || ''}</td>
+        </tr>
+      `).join('');
+
+      const somaExcel = itensExcel.reduce((acc, i) => acc + Number(i.valor || 0), 0);
+      document.getElementById('qtd-excel').textContent = `Registros na prévia: ${itensExcel.length}`;
+      document.getElementById('total-excel').textContent = `Total: ${formatarMoeda(somaExcel)}`;
+    }
+
+    renderizar();
+  </script>
+</body>
+</html>
