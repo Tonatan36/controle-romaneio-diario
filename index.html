@@ -24,6 +24,7 @@
       --secondary-text: #111827;
       --row-editing: #fef3c7;
       --row-delivered: #f0fdf4;
+      --row-missing: #fffbeb;
       --row-failed: #fef2f2;
     }
 
@@ -46,6 +47,7 @@
       --secondary-text: #f1f5f9;
       --row-editing: #422006;
       --row-delivered: #052e16;
+      --row-missing: #451a03;
       --row-failed: #450a0a;
     }
 
@@ -112,17 +114,22 @@
     th { background: var(--bg-subtle); font-weight: 700; white-space: nowrap; }
     tr.editing-row { background: var(--row-editing); }
     tr.row-entregue { background: var(--row-delivered); }
+    tr.row-faltou-material { background: var(--row-missing); }
     tr.row-nao-entregue { background: var(--row-failed); }
 
     .inline-input { padding: 6px 8px; font-size: 0.9rem; min-width: 90px; }
-    .status-box { display: flex; flex-direction: column; gap: 5px; min-width: 175px; }
+    .status-box { display: flex; flex-direction: column; gap: 5px; min-width: 190px; }
     .status-select { padding: 5px 8px; font-size: 0.82rem; font-weight: 700; border-radius: 5px; cursor: pointer; }
     .status-select.st-pendente { border-color: #9ca3af; }
     .status-select.st-entregue { border-color: #16a34a; color: #15803d; }
+    .status-select.st-faltou-material { border-color: #d97706; color: #b45309; }
     .status-select.st-nao-entregue { border-color: #dc2626; color: #dc2626; }
     body.dark .status-select.st-entregue { color: #4ade80; }
+    body.dark .status-select.st-faltou-material { color: #fbbf24; }
     body.dark .status-select.st-nao-entregue { color: #f87171; }
-    .motivo-nao-entregue-input { padding: 5px 8px; font-size: 0.82rem; border-color: var(--danger); }
+    .motivo-ocorrencia-input { padding: 5px 8px; font-size: 0.82rem; }
+    .motivo-ocorrencia-input.borda-alerta { border-color: var(--warning); }
+    .motivo-ocorrencia-input.borda-erro { border-color: var(--danger); }
 
     .num { text-align: right; white-space: nowrap; }
     .acoes-celula { display: flex; gap: 6px; white-space: nowrap; }
@@ -282,7 +289,7 @@
 
       <div class="summary">
         <span id="qtd-cadastro">Total de pedidos: 0</span>
-        <span id="status-resumo-cadastro">Entregues: 0 | Não entregues: 0 | Pendentes: 0</span>
+        <span id="status-resumo-cadastro">Entregues: 0 | Faltou material: 0 | Não entregues: 0 | Pendentes: 0</span>
         <span id="total-cadastro">Valor total: R$ 0,00</span>
       </div>
     </section>
@@ -482,7 +489,7 @@
         <label><input type="checkbox" class="col-check" value="valor" checked /> Valor</label>
         <label><input type="checkbox" class="col-check" value="observacao" checked /> Observação</label>
         <label><input type="checkbox" class="col-check" value="statusEntrega" checked /> Status Entrega</label>
-        <label><input type="checkbox" class="col-check" value="motivoNaoEntrega" checked /> Obs. Não Entrega</label>
+        <label><input type="checkbox" class="col-check" value="motivoNaoEntrega" checked /> Obs. Ocorrência</label>
       </div>
 
       <div class="actions">
@@ -649,8 +656,22 @@
     function normalizarStatusEntrega(status) {
       const s = String(status || 'PENDENTE').toUpperCase();
       if (s === 'ENTREGUE') return 'ENTREGUE';
+      if (s === 'FALTOU MATERIAL') return 'FALTOU MATERIAL';
       if (s === 'NÃO ENTREGUE') return 'NÃO ENTREGUE';
       return 'PENDENTE';
+    }
+
+    function statusExigeObservacao(status) {
+      const st = normalizarStatusEntrega(status);
+      return st === 'NÃO ENTREGUE' || st === 'FALTOU MATERIAL';
+    }
+
+    function obterClasseLinhaStatus(status) {
+      const st = normalizarStatusEntrega(status);
+      if (st === 'ENTREGUE') return 'row-entregue';
+      if (st === 'FALTOU MATERIAL') return 'row-faltou-material';
+      if (st === 'NÃO ENTREGUE') return 'row-nao-entregue';
+      return '';
     }
 
     function renderBadgeTurno(turno) {
@@ -662,16 +683,23 @@
     function renderControleStatusEntrega(item) {
       const st = normalizarStatusEntrega(item.statusEntrega);
       const motivo = escaparHTML((item.motivoNaoEntrega || '').toUpperCase());
-      const clsSelect = st === 'ENTREGUE'
-        ? 'st-entregue'
-        : (st === 'NÃO ENTREGUE' ? 'st-nao-entregue' : 'st-pendente');
 
-      const campoMotivo = st === 'NÃO ENTREGUE'
+      let clsSelect = 'st-pendente';
+      if (st === 'ENTREGUE') clsSelect = 'st-entregue';
+      else if (st === 'FALTOU MATERIAL') clsSelect = 'st-faltou-material';
+      else if (st === 'NÃO ENTREGUE') clsSelect = 'st-nao-entregue';
+
+      const placeholderObs = st === 'FALTOU MATERIAL'
+        ? 'Qual material faltou?...'
+        : 'Motivo / Obs. não entrega...';
+      const clsBordaObs = st === 'FALTOU MATERIAL' ? 'borda-alerta' : 'borda-erro';
+
+      const campoMotivo = statusExigeObservacao(st)
         ? `<input type="text"
-             class="motivo-nao-entregue-input"
+             class="motivo-ocorrencia-input ${clsBordaObs}"
              value="${motivo}"
-             placeholder="Motivo / Obs. não entrega..."
-             aria-label="Observação de não entrega"
+             placeholder="${placeholderObs}"
+             aria-label="Observação da ocorrência de entrega"
              oninput="this.value=this.value.toUpperCase()"
              onchange="atualizarMotivoNaoEntrega(${item.id}, this.value)"
              onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" />`
@@ -682,6 +710,7 @@
           <select class="status-select ${clsSelect}" aria-label="Status da entrega" onchange="atualizarStatusEntrega(${item.id}, this.value)">
             <option value="PENDENTE" ${st === 'PENDENTE' ? 'selected' : ''}>⏳ PENDENTE</option>
             <option value="ENTREGUE" ${st === 'ENTREGUE' ? 'selected' : ''}>✅ ENTREGUE</option>
+            <option value="FALTOU MATERIAL" ${st === 'FALTOU MATERIAL' ? 'selected' : ''}>⚠️ FALTOU MATERIAL</option>
             <option value="NÃO ENTREGUE" ${st === 'NÃO ENTREGUE' ? 'selected' : ''}>❌ NÃO ENTREGUE</option>
           </select>
           ${campoMotivo}
@@ -947,18 +976,20 @@
     // ================= ATUALIZAÇÃO DE STATUS DE ENTREGA =================
     async function atualizarStatusEntrega(id, novoStatus) {
       const statusNorm = normalizarStatusEntrega(novoStatus);
+      const precisaObs = statusExigeObservacao(statusNorm);
+
       const novaLista = itensCache.map(item => {
         if (item.id !== id) return item;
         return {
           ...item,
           statusEntrega: statusNorm,
-          motivoNaoEntrega: statusNorm === 'NÃO ENTREGUE' ? (item.motivoNaoEntrega || '') : ''
+          motivoNaoEntrega: precisaObs ? (item.motivoNaoEntrega || '') : ''
         };
       });
       await persistirAlteracoes(novaLista, true);
 
-      if (statusNorm === 'NÃO ENTREGUE') {
-        const inp = document.querySelector(`#row-${id} .motivo-nao-entregue-input, #row-turno-${id} .motivo-nao-entregue-input`);
+      if (precisaObs) {
+        const inp = document.querySelector(`#row-${id} .motivo-ocorrencia-input, #row-turno-${id} .motivo-ocorrencia-input`);
         if (inp) inp.focus();
       }
     }
@@ -1084,7 +1115,7 @@
       valor: { label: 'VALOR (R$)', get: i => formatarValorExcel(i.valor), num: true },
       observacao: { label: 'OBSERVAÇÃO', get: i => (i.observacao || '').toUpperCase(), num: false },
       statusEntrega: { label: 'STATUS ENTREGA', get: i => normalizarStatusEntrega(i.statusEntrega), num: false },
-      motivoNaoEntrega: { label: 'OBS. NÃO ENTREGA', get: i => (i.motivoNaoEntrega || '').toUpperCase(), num: false }
+      motivoNaoEntrega: { label: 'OBS. OCORRÊNCIA', get: i => (i.motivoNaoEntrega || '').toUpperCase(), num: false }
     };
 
     function obterColunasSelecionadas() {
@@ -1306,10 +1337,7 @@
 
       document.getElementById('tbody-cadastro').innerHTML = itensCadastro.map(item => {
         const turnoAtual = normalizarTurno(item.turno);
-        const stAtual = normalizarStatusEntrega(item.statusEntrega);
-        const rowClass = stAtual === 'ENTREGUE'
-          ? 'row-entregue'
-          : (stAtual === 'NÃO ENTREGUE' ? 'row-nao-entregue' : '');
+        const rowClass = obterClasseLinhaStatus(item.statusEntrega);
 
         if (inlineEditId === item.id) {
           return `
@@ -1359,12 +1387,13 @@
 
       const somaCad = itensCadastro.reduce((acc, i) => acc + Number(i.valor || 0), 0);
       const qtdEntregues = itensCadastro.filter(i => normalizarStatusEntrega(i.statusEntrega) === 'ENTREGUE').length;
+      const qtdFaltouMaterial = itensCadastro.filter(i => normalizarStatusEntrega(i.statusEntrega) === 'FALTOU MATERIAL').length;
       const qtdNaoEntregues = itensCadastro.filter(i => normalizarStatusEntrega(i.statusEntrega) === 'NÃO ENTREGUE').length;
-      const qtdPendentes = itensCadastro.length - qtdEntregues - qtdNaoEntregues;
+      const qtdPendentes = itensCadastro.length - qtdEntregues - qtdFaltouMaterial - qtdNaoEntregues;
 
       document.getElementById('qtd-cadastro').textContent = `Total de pedidos: ${itensCadastro.length}`;
       document.getElementById('status-resumo-cadastro').textContent =
-        `✅ Entregues: ${qtdEntregues} | ❌ Não entregues: ${qtdNaoEntregues} | ⏳ Pendentes: ${qtdPendentes}`;
+        `✅ Entregues: ${qtdEntregues} | ⚠️ Faltou material: ${qtdFaltouMaterial} | ❌ Não entregues: ${qtdNaoEntregues} | ⏳ Pendentes: ${qtdPendentes}`;
       document.getElementById('total-cadastro').textContent = `Valor total: ${formatarMoeda(somaCad)}`;
 
       // ABA 2: Turnos (Manhã / Tarde)
@@ -1399,10 +1428,7 @@
       document.getElementById('tbody-turnos').innerHTML = itensTurnosFiltrados.map(item => {
         const tAtual = normalizarTurno(item.turno);
         const destino = tAtual === 'MANHÃ' ? 'TARDE' : 'MANHÃ';
-        const stAtual = normalizarStatusEntrega(item.statusEntrega);
-        const rowClass = stAtual === 'ENTREGUE'
-          ? 'row-entregue'
-          : (stAtual === 'NÃO ENTREGUE' ? 'row-nao-entregue' : '');
+        const rowClass = obterClasseLinhaStatus(item.statusEntrega);
 
         return `
           <tr id="row-turno-${item.id}" class="${rowClass}">
@@ -1445,11 +1471,13 @@
 
       document.getElementById('tbody-impressao').innerHTML = itensImp.map(item => {
         const st = normalizarStatusEntrega(item.statusEntrega);
+        const mot = (item.motivoNaoEntrega || '').toUpperCase();
         let textoStatusImpressao = '';
         if (st === 'ENTREGUE') {
           textoStatusImpressao = 'ENTREGUE';
+        } else if (st === 'FALTOU MATERIAL') {
+          textoStatusImpressao = mot ? `FALTOU MATERIAL (${mot})` : 'FALTOU MATERIAL';
         } else if (st === 'NÃO ENTREGUE') {
-          const mot = (item.motivoNaoEntrega || '').toUpperCase();
           textoStatusImpressao = mot ? `NÃO ENTREGUE (${mot})` : 'NÃO ENTREGUE';
         }
 
