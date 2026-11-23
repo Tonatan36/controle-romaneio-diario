@@ -1,4 +1,4 @@
-const CACHE_NAME = 'romaneio-pwa-v1';
+const CACHE_NAME = 'romaneio-pwa-v2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -33,7 +33,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (request.mode === 'navigate') {
+  if (request.mode === 'navigate' || url.pathname.endsWith('index.html')) {
     event.respondWith(
       fetch(request)
         .then(response => {
