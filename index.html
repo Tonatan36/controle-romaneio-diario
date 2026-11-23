@@ -3,15 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#2563eb" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Romaneio" />
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
-  <link rel="apple-touch-icon" href="./icon-192.png" />
-  <title>Controle de Romaneio Diário</title>
+  <title>Controle de Romaneio Diário - Aço Forte</title>
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="manifest.json" />
   <style>
     :root {
       --bg-body: #f4f6f8;
@@ -153,10 +147,122 @@
 
     .backup-box { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-light); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
-    .print-header { display: none; margin-bottom: 14px; border-bottom: 2px solid #000; padding-bottom: 8px; }
-    .print-header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-    .print-company { font-size: 1.25rem; font-weight: 800; text-transform: uppercase; }
-    .print-meta { font-size: 0.85rem; margin-top: 4px; }
+    /* ================= CABEÇALHO OFICIAL PARA IMPRESSÃO (DOCUMENTO AÇO FORTE) ================= */
+    .print-header-box {
+      display: none;
+      border: 1.5px solid #000;
+      margin-bottom: 10px;
+      background: #fff;
+      color: #000;
+    }
+    .print-company-row {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1.5px solid #000;
+      gap: 14px;
+    }
+    .print-logo-box {
+      width: 132px;
+      height: 82px;
+      background: #facc15;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      padding: 4px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .print-company-details {
+      flex: 1;
+      text-align: center;
+    }
+    .print-company-name {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .print-company-lines {
+      text-align: left;
+      display: inline-block;
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+    .print-doc-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      gap: 12px;
+    }
+    .print-doc-spacer {
+      width: 185px;
+    }
+    .print-doc-title {
+      flex: 1;
+      text-align: center;
+      font-size: 1.32rem;
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+    .print-doc-meta {
+      width: 185px;
+      text-align: right;
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+    .print-filter-bar {
+      border-top: 1px solid #000;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      background: #f8fafc;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* ================= BLOCO DE ASSINATURA DO MOTORISTA NA IMPRESSÃO ================= */
+    .print-signatures {
+      display: none;
+      margin-top: 26px;
+      padding-top: 8px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+      color: #000;
+    }
+    .print-declaration {
+      font-size: 0.76rem;
+      margin-bottom: 34px;
+      text-align: left;
+    }
+    .print-sig-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 32px;
+    }
+    .print-sig-col {
+      flex: 1;
+      text-align: center;
+    }
+    .print-sig-line {
+      border-top: 1.2px solid #000;
+      padding-top: 5px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .print-sig-sub {
+      font-size: 0.75rem;
+      margin-top: 2px;
+      text-transform: uppercase;
+    }
 
     @media (max-width: 640px) {
       body { padding: 8px; }
@@ -173,7 +279,7 @@
 
     @page {
       size: A4 portrait;
-      margin: 12mm;
+      margin: 10mm;
       @bottom-right {
         content: "Página " counter(page) " de " counter(pages);
         font-size: 9pt;
@@ -188,13 +294,14 @@
       .print-turno-text { display: inline !important; }
       .tab-panel { display: none !important; }
       #tab-impressao { display: block !important; }
-      .table-wrapper { overflow: visible; }
+      .table-wrapper { overflow: visible; margin-top: 4px; }
       table { min-width: 100%; width: 100%; }
       thead { display: table-header-group; }
       tr { break-inside: avoid; page-break-inside: avoid; }
-      .print-header { display: block !important; }
-      th, td { border: 1px solid #000 !important; color: #000 !important; background: #fff !important; padding: 6px 8px; font-size: 0.85rem; }
-      th { background: #f1f5f9 !important; font-weight: 800; }
+      .print-header-box { display: block !important; }
+      .print-signatures { display: block !important; }
+      th, td { border: 1px solid #000 !important; color: #000 !important; background: #fff !important; padding: 6px 8px; font-size: 0.84rem; }
+      th { background: #f1f5f9 !important; font-weight: 800; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .summary { color: #000 !important; border-top: 1px solid #000; padding-top: 8px; }
     }
     .print-turno-text { display: none; }
@@ -204,7 +311,7 @@
   <div class="container">
     <div class="top-bar no-print">
       <div class="title-area">
-        <h1>Romaneio de Entrega</h1>
+        <h1>Romaneio de Entrega — Aço Forte</h1>
         <div class="status-badges">
           <span id="badge-nuvem" class="badge badge-syncing">🔄 Conectando à nuvem...</span>
           <span id="badge-salvo" class="badge badge-saved" style="display: none;">✓ Salvo</span>
@@ -212,6 +319,7 @@
         </div>
       </div>
       <div class="top-actions">
+        <button type="button" id="btn-instalar-pwa" class="success" style="display: none;">📲 Instalar App</button>
         <button type="button" id="btn-sincronizar" class="secondary" title="Buscar atualizações do banco na nuvem">🔄 Atualizar Nuvem</button>
         <button type="button" id="btn-tema" class="secondary" title="Alternar modo claro/escuro">🌙 Modo Escuro</button>
         <button type="button" id="btn-imprimir-hoje-topo" class="print-today" title="Atalho: Ctrl + P">🖨️ Imprimir o Dia (Hoje)</button>
@@ -247,7 +355,7 @@
           </div>
           <div class="field">
             <label for="pedido">Número do pedido *</label>
-            <input type="text" id="pedido" placeholder="Ex.: 4589" required />
+            <input type="text" id="pedido" placeholder="Ex.: 030301" required />
           </div>
           <div class="field">
             <label for="cliente">Cliente *</label>
@@ -377,10 +485,6 @@
     <section id="tab-impressao" class="tab-panel">
       <div class="form-grid no-print">
         <div class="field">
-          <label for="nome-empresa">Nome da empresa no cabeçalho</label>
-          <input type="text" id="nome-empresa" placeholder="Ex.: AÇO FORTE - EXPEDIÇÃO" />
-        </div>
-        <div class="field">
           <label for="filtro-data">Data do romaneio</label>
           <input type="date" id="filtro-data" />
         </div>
@@ -406,16 +510,39 @@
         </div>
       </div>
 
-      <div class="print-header">
-        <div class="print-header-top">
-          <div>
-            <div id="print-empresa-titulo" class="print-company">CONTROLE DE ROMANEIO DE ENTREGA</div>
-            <div id="cabecalho-impresso" class="print-meta"></div>
+      <!-- CABEÇALHO DE IMPRESSÃO SALVO DA AÇO FORTE -->
+      <div class="print-header-box">
+        <div class="print-company-row">
+          <div class="print-logo-box">
+            <svg width="122" height="72" viewBox="0 0 180 106" xmlns="http://www.w3.org/2000/svg" aria-label="Logo Aço Forte">
+              <polygon points="78,10 56,52 94,52 90,44 69,44 82,20" fill="#1e293b"/>
+              <polygon points="88,10 116,10 116,18 96,18 96,28 112,28 112,36 96,36 96,52 88,52" fill="#1e293b"/>
+              <text x="90" y="75" text-anchor="middle" font-family="Arial Narrow, Arial, sans-serif" font-weight="900" font-size="22" letter-spacing="2.5" fill="#1e293b">AÇOFORTE</text>
+              <text x="90" y="92" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="7.6" letter-spacing="0.4" fill="#1e293b">SUA LOJA DO AÇO, FERRAGENS E CONSTRUÇÃO</text>
+            </svg>
           </div>
-          <div style="text-align: right;">
-            <div style="font-weight: 700;">ROMANEIO DIÁRIO</div>
-            <div id="print-data-emissao" class="print-meta"></div>
+          <div class="print-company-details">
+            <div class="print-company-name">ACO FORTE COMERCIO VAREJISTA DE FERRAGENS LTDA</div>
+            <div class="print-company-lines">
+              <div><strong>CNPJ:</strong> 70109897000171 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>IE:</strong> 161040136</div>
+              <div><strong>END:</strong> &nbsp; R DOUTOR MANOEL LOPES &nbsp;&nbsp; <strong>BAIRRO:</strong> ERNESTO GEISEL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>CEP:</strong> 58075427</div>
+              <div><strong>FONE:</strong> (83) 988659530 &nbsp;&nbsp; <strong>EMAIL:</strong> acofortejpa@hotmail.com</div>
+            </div>
           </div>
+        </div>
+
+        <div class="print-doc-row">
+          <div class="print-doc-spacer"></div>
+          <div class="print-doc-title">ROMANEIO DE ENTREGA</div>
+          <div class="print-doc-meta">
+            <div><strong>DATA:</strong> <span id="print-data-rota"></span></div>
+            <div><strong>HORA:</strong> <span id="print-hora-emissao"></span></div>
+          </div>
+        </div>
+
+        <div class="print-filter-bar">
+          <span id="cabecalho-impresso">ROTA: - | TURNO: TODOS | MOTORISTA: TODOS</span>
+          <span id="print-qtd-topo">PEDIDOS: 0</span>
         </div>
       </div>
 
@@ -439,6 +566,23 @@
       <div class="summary">
         <span id="qtd-impressao">Entregas no dia: 0</span>
         <span id="total-impressao">Total do romaneio: R$ 0,00</span>
+      </div>
+
+      <!-- CAMPO PARA ASSINATURA DO MOTORISTA E EXPEDIÇÃO NA IMPRESSÃO -->
+      <div class="print-signatures">
+        <div class="print-declaration">
+          Declaro ter conferido e recebido os pedidos relacionados neste romaneio de entrega em perfeitas condições para transporte e entrega aos clientes.
+        </div>
+        <div class="print-sig-grid">
+          <div class="print-sig-col">
+            <div class="print-sig-line">Assinatura do Conferente / Expedição</div>
+            <div class="print-sig-sub">ACO FORTE COMERCIO VAREJISTA DE FERRAGENS LTDA</div>
+          </div>
+          <div class="print-sig-col">
+            <div class="print-sig-line">Assinatura do Motorista</div>
+            <div id="print-nome-motorista-assinatura" class="print-sig-sub">Motorista: ________________________________________</div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -544,7 +688,6 @@
     const LEGACY_STORAGE_KEY = 'romaneio_entregas_v1';
     const META_LAST_BACKUP = 'romaneio_last_backup_ts';
     const META_CHANGES_COUNT = 'romaneio_changes_since_backup';
-    const META_COMPANY_NAME = 'romaneio_company_name';
     const META_DARK_MODE = 'romaneio_dark_mode';
 
     let db = null;
@@ -564,11 +707,9 @@
       return new Date().getHours() < 12 ? 'MANHÃ' : 'TARDE';
     }
 
-    function obterDataHoraAtualBR() {
-      const agora = new Date();
-      return agora.toLocaleString('pt-BR', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
+    function obterHoraAtualBR() {
+      return new Date().toLocaleTimeString('pt-BR', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
       });
     }
 
@@ -589,7 +730,6 @@
     const turnoAbaFiltro = document.getElementById('turno-aba-filtro');
     const turnoAbaMotorista = document.getElementById('turno-aba-motorista');
 
-    const nomeEmpresaInput = document.getElementById('nome-empresa');
     const filtroData = document.getElementById('filtro-data');
     const filtroTurno = document.getElementById('filtro-turno');
     const filtroMotorista = document.getElementById('filtro-motorista');
@@ -609,13 +749,6 @@
     excelData.value = hoje;
     excelInicio.value = hoje;
     excelFim.value = hoje;
-
-    nomeEmpresaInput.value = localStorage.getItem(META_COMPANY_NAME) || '';
-    nomeEmpresaInput.addEventListener('input', () => {
-      nomeEmpresaInput.value = nomeEmpresaInput.value.toUpperCase();
-      localStorage.setItem(META_COMPANY_NAME, nomeEmpresaInput.value);
-      renderizar();
-    });
 
     const btnTema = document.getElementById('btn-tema');
     function aplicarTema(escuro) {
@@ -865,7 +998,6 @@
       if (!silencioso) atualizarStatusNuvem('syncing', '🔄 Sincronizando...');
       try {
         const dadosNuvem = await buscarTodosSupabase();
-        // Se a nuvem estiver vazia mas houver dados locais novos, sobe os locais primeiro
         if (dadosNuvem.length === 0 && itensCache.length > 0) {
           await upsertSupabase(itensCache);
         } else {
@@ -941,7 +1073,7 @@
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `backup_romaneio_${obterDataHojeLocal()}.json`;
+      link.download = `backup_romaneio_acoforte_${obterDataHojeLocal()}.json`;
       link.click();
       URL.revokeObjectURL(url);
 
@@ -965,7 +1097,6 @@
       marcarSalvo();
       renderizar();
 
-      // Sincroniza diferença com Supabase
       atualizarStatusNuvem('syncing', '🔄 Salvando na nuvem...');
       try {
         const idsNovos = new Set(novoArray.map(i => i.id));
@@ -1348,7 +1479,7 @@
       }
 
       const url = URL.createObjectURL(blob);
-      const nomeArquivo = `romaneio_${excelPeriodo.value}_${obterDataHojeLocal()}.csv`;
+      const nomeArquivo = `romaneio_acoforte_${excelPeriodo.value}_${obterDataHojeLocal()}.csv`;
       const link = document.createElement('a');
       link.href = url;
       link.download = nomeArquivo;
@@ -1646,13 +1777,22 @@
 
       const somaImp = itensImp.reduce((acc, i) => acc + Number(i.valor || 0), 0);
       document.getElementById('qtd-impressao').textContent = `Entregas no dia: ${itensImp.length}`;
-      document.getElementById('total-impressao').textContent = `Total do romaneio: R$ 0,00`.replace('R$ 0,00', formatarMoeda(somaImp));
+      document.getElementById('total-impressao').textContent = `Total do romaneio: ${formatarMoeda(somaImp)}`;
 
-      const empresaTitulo = nomeEmpresaInput.value.trim() || 'CONTROLE DE ROMANEIO DE ENTREGA';
-      document.getElementById('print-empresa-titulo').textContent = empresaTitulo;
+      // Atualiza metadados do cabeçalho oficial Aço Forte e assinatura do motorista
+      const dataRotaFormatada = formatarDataBR(filtroData.value);
+      document.getElementById('print-data-rota').textContent = dataRotaFormatada;
+      document.getElementById('print-hora-emissao').textContent = obterHoraAtualBR();
       document.getElementById('cabecalho-impresso').textContent =
-        `DATA DA ROTA: ${formatarDataBR(filtroData.value)} | TURNO: ${filtroTurno.value || 'TODOS'} | MOTORISTA: ${filtroMotorista.value || 'TODOS'}`;
-      document.getElementById('print-data-emissao').textContent = `EMITIDO EM: ${obterDataHoraAtualBR()}`;
+        `ROTA: ${dataRotaFormatada} | TURNO: ${filtroTurno.value || 'TODOS'} | MOTORISTA: ${filtroMotorista.value || 'TODOS'}`;
+      document.getElementById('print-qtd-topo').textContent = `PEDIDOS: ${itensImp.length}`;
+
+      const assinaturaMotoristaSub = document.getElementById('print-nome-motorista-assinatura');
+      if (filtroMotorista.value) {
+        assinaturaMotoristaSub.textContent = `MOTORISTA: ${filtroMotorista.value}`;
+      } else {
+        assinaturaMotoristaSub.textContent = 'MOTORISTA: ________________________________________';
+      }
 
       // ABA 4: Exportar para Excel
       const cols = obterColunasSelecionadas();
@@ -1672,15 +1812,37 @@
       document.getElementById('total-excel').textContent = `Total: ${formatarMoeda(somaExcel)}`;
     }
 
+    inicializarDados();
+
+    // ================= PWA (SERVICE WORKER & INSTALAÇÃO) =================
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(error => {
-          console.warn('Falha ao registrar o Service Worker:', error);
+        navigator.serviceWorker.register('./sw.js').catch(err => {
+          console.warn('Falha ao registrar Service Worker:', err);
         });
       });
     }
 
-    inicializarDados();
+    let deferredPrompt = null;
+    const btnInstalarPwa = document.getElementById('btn-instalar-pwa');
+
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      btnInstalarPwa.style.display = 'inline-block';
+    });
+
+    btnInstalarPwa.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      btnInstalarPwa.style.display = 'none';
+    });
+
+    window.addEventListener('appinstalled', () => {
+      btnInstalarPwa.style.display = 'none';
+    });
   </script>
 </body>
 </html>
