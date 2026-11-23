@@ -548,7 +548,7 @@
               <th>Cliente</th>
               <th class="num">Valor</th>
               <th>Observação</th>
-              <th>Status / Assinatura</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody id="tbody-impressao"></tbody>
@@ -560,7 +560,7 @@
         <span id="total-impressao">Total do romaneio: R$ 0,00</span>
       </div>
 
-      <!-- ASSINATURA ÚNICA DO MOTORISTA NO ESTILO SOLICITADO -->
+      <!-- ASSINATURA ÚNICA DO MOTORISTA -->
       <div class="print-signatures">
         <div class="print-sig-single">
           <div class="print-sig-line">ASSINATURA DO MOTORISTA</div>
@@ -1753,7 +1753,7 @@
             <td>${escaparHTML((item.cliente || '').toUpperCase())}</td>
             <td class="num">${formatarMoeda(item.valor)}</td>
             <td>${escaparHTML((item.observacao || '-').toUpperCase())}</td>
-            <td style="min-width: 165px;">${escaparHTML(textoStatusImpressao)}</td>
+            <td style="min-width: 145px;">${escaparHTML(textoStatusImpressao)}</td>
           </tr>
         `;
       }).join('');
