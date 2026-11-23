@@ -228,38 +228,30 @@
       print-color-adjust: exact;
     }
 
-    /* ================= BLOCO DE ASSINATURA DO MOTORISTA NA IMPRESSÃO ================= */
+    /* ================= ASSINATURA DO MOTORISTA (ESTILO LIMPO CENTRALIZADO) ================= */
     .print-signatures {
       display: none;
-      margin-top: 26px;
-      padding-top: 8px;
+      margin-top: 46px;
       break-inside: avoid;
       page-break-inside: avoid;
       color: #000;
     }
-    .print-declaration {
-      font-size: 0.76rem;
-      margin-bottom: 34px;
-      text-align: left;
-    }
-    .print-sig-grid {
-      display: flex;
-      justify-content: space-between;
-      gap: 32px;
-    }
-    .print-sig-col {
-      flex: 1;
+    .print-sig-single {
+      width: 320px;
+      margin: 0 auto;
       text-align: center;
     }
     .print-sig-line {
       border-top: 1.2px solid #000;
       padding-top: 5px;
-      font-size: 0.82rem;
+      font-size: 0.85rem;
       font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
-    .print-sig-sub {
-      font-size: 0.75rem;
+    .print-sig-name {
+      font-size: 0.85rem;
+      font-weight: 400;
       margin-top: 2px;
       text-transform: uppercase;
     }
@@ -510,7 +502,7 @@
         </div>
       </div>
 
-      <!-- CABEÇALHO DE IMPRESSÃO SALVO DA AÇO FORTE -->
+      <!-- CABEÇALHO OFICIAL DA AÇO FORTE -->
       <div class="print-header-box">
         <div class="print-company-row">
           <div class="print-logo-box">
@@ -568,20 +560,11 @@
         <span id="total-impressao">Total do romaneio: R$ 0,00</span>
       </div>
 
-      <!-- CAMPO PARA ASSINATURA DO MOTORISTA E EXPEDIÇÃO NA IMPRESSÃO -->
+      <!-- ASSINATURA ÚNICA DO MOTORISTA NO ESTILO SOLICITADO -->
       <div class="print-signatures">
-        <div class="print-declaration">
-          Declaro ter conferido e recebido os pedidos relacionados neste romaneio de entrega em perfeitas condições para transporte e entrega aos clientes.
-        </div>
-        <div class="print-sig-grid">
-          <div class="print-sig-col">
-            <div class="print-sig-line">Assinatura do Conferente / Expedição</div>
-            <div class="print-sig-sub">ACO FORTE COMERCIO VAREJISTA DE FERRAGENS LTDA</div>
-          </div>
-          <div class="print-sig-col">
-            <div class="print-sig-line">Assinatura do Motorista</div>
-            <div id="print-nome-motorista-assinatura" class="print-sig-sub">Motorista: ________________________________________</div>
-          </div>
+        <div class="print-sig-single">
+          <div class="print-sig-line">ASSINATURA DO MOTORISTA</div>
+          <div id="print-nome-motorista-assinatura" class="print-sig-name"></div>
         </div>
       </div>
     </section>
@@ -1779,7 +1762,7 @@
       document.getElementById('qtd-impressao').textContent = `Entregas no dia: ${itensImp.length}`;
       document.getElementById('total-impressao').textContent = `Total do romaneio: ${formatarMoeda(somaImp)}`;
 
-      // Atualiza metadados do cabeçalho oficial Aço Forte e assinatura do motorista
+      // Atualiza metadados do cabeçalho oficial Aço Forte e assinatura única do motorista
       const dataRotaFormatada = formatarDataBR(filtroData.value);
       document.getElementById('print-data-rota').textContent = dataRotaFormatada;
       document.getElementById('print-hora-emissao').textContent = obterHoraAtualBR();
@@ -1788,11 +1771,7 @@
       document.getElementById('print-qtd-topo').textContent = `PEDIDOS: ${itensImp.length}`;
 
       const assinaturaMotoristaSub = document.getElementById('print-nome-motorista-assinatura');
-      if (filtroMotorista.value) {
-        assinaturaMotoristaSub.textContent = `MOTORISTA: ${filtroMotorista.value}`;
-      } else {
-        assinaturaMotoristaSub.textContent = 'MOTORISTA: ________________________________________';
-      }
+      assinaturaMotoristaSub.textContent = filtroMotorista.value ? filtroMotorista.value : '';
 
       // ABA 4: Exportar para Excel
       const cols = obterColunasSelecionadas();
