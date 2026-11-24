@@ -83,7 +83,7 @@
 
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; margin-bottom: 14px; }
     .field { display: flex; flex-direction: column; gap: 4px; }
-    label { font-size: 0.84rem; font-weight: 600; color: var(--text-main); }
+    label { font-size: 0.84rem; font-weight: 600; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; gap: 4px; }
     input, select { padding: 10px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-main); border-radius: 6px; font-size: 16px; width: 100%; }
     input:focus, select:focus { outline: 2px solid var(--primary); border-color: var(--primary); }
 
@@ -91,6 +91,8 @@
     input[type="text"]::placeholder { text-transform: none; color: var(--text-muted); }
 
     .input-invalid { border: 2px solid var(--danger) !important; background: #fef2f2 !important; color: #111827 !important; }
+    .input-found { border: 2px solid var(--success) !important; }
+    .codigo-hint { font-size: 0.72rem; font-weight: 700; color: var(--primary); }
 
     .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
     button { min-height: 40px; }
@@ -306,6 +308,7 @@
         <h1>Romaneio de Entrega — Aço Forte</h1>
         <div class="status-badges">
           <span id="badge-nuvem" class="badge badge-syncing">🔄 Conectando à nuvem...</span>
+          <span id="badge-clientes-db" class="badge badge-syncing">👥 Base clientes...</span>
           <span id="badge-salvo" class="badge badge-saved" style="display: none;">✓ Salvo</span>
           <span id="badge-backup" class="badge badge-backup-warn">Sem backup ainda</span>
         </div>
@@ -350,8 +353,15 @@
             <input type="text" id="pedido" placeholder="Ex.: 030301" required />
           </div>
           <div class="field">
+            <label for="codigo-cliente">
+              <span>Código do cliente</span>
+              <span id="status-codigo-cliente" class="codigo-hint"></span>
+            </label>
+            <input type="text" id="codigo-cliente" inputmode="numeric" placeholder="Ex.: 101132" autocomplete="off" />
+          </div>
+          <div class="field">
             <label for="cliente">Cliente *</label>
-            <input type="text" id="cliente" list="lista-clientes" placeholder="Nome do cliente / obra" required />
+            <input type="text" id="cliente" list="lista-clientes" placeholder="Preenche pelo código ou digite" required />
             <datalist id="lista-clientes"></datalist>
           </div>
           <div class="field">
@@ -663,18 +673,21 @@
     const SUPABASE_REST_URL = 'https://iqfcyxuhqnluucifylqn.supabase.co/rest/v1';
     const SUPABASE_API_KEY = 'sb_publishable_PSTBZr3SnTxlmCqxFth3Pw_3LLr38Gb';
     const SUPABASE_TABLE = 'romaneios';
+    const SUPABASE_CLIENTES_TABLE = 'clientes_acoforte';
 
     // ================= CONFIGURAÇÃO CACHE LOCAL (INDEXEDDB) =================
     const DB_NAME = 'RomaneioEntregasDB';
     const DB_VERSION = 1;
     const STORE_NAME = 'entregas';
     const LEGACY_STORAGE_KEY = 'romaneio_entregas_v1';
+    const CACHE_CLIENTES_KEY = 'acoforte_clientes_map_v1';
     const META_LAST_BACKUP = 'romaneio_last_backup_ts';
     const META_CHANGES_COUNT = 'romaneio_changes_since_backup';
     const META_DARK_MODE = 'romaneio_dark_mode';
 
     let db = null;
     let itensCache = [];
+    let mapaClientes = {}; // { "101132": { nome: "...", endereco: "...", telefone: "..." } }
     let inlineEditId = null;
     let ultimoEstadoUndo = null;
 
@@ -702,12 +715,15 @@
     const turnoInput = document.getElementById('turno');
     const motoristaInput = document.getElementById('motorista');
     const pedidoInput = document.getElementById('pedido');
+    const codigoClienteInput = document.getElementById('codigo-cliente');
+    const statusCodigoCliente = document.getElementById('status-codigo-cliente');
     const clienteInput = document.getElementById('cliente');
     const valorInput = document.getElementById('valor');
     const observacaoInput = document.getElementById('observacao');
     const buscaRapidaInput = document.getElementById('busca-rapida');
     const btnUndo = document.getElementById('btn-undo');
     const badgeNuvem = document.getElementById('badge-nuvem');
+    const badgeClientesDb = document.getElementById('badge-clientes-db');
 
     const turnoAbaData = document.getElementById('turno-aba-data');
     const turnoAbaFiltro = document.getElementById('turno-aba-filtro');
@@ -758,6 +774,138 @@
         badgeNuvem.textContent = texto || '⚠️ Offline (salvo no cache local)';
       }
     }
+
+    function atualizarBadgeBaseClientes(qtd, offline = false) {
+      badgeClientesDb.className = 'badge';
+      if (qtd > 0) {
+        badgeClientesDb.classList.add(offline ? 'badge-backup-ok' : 'badge-saved');
+        badgeClientesDb.textContent = `👥 ${qtd} clientes ativos`;
+      } else {
+        badgeClientesDb.classList.add('badge-offline');
+        badgeClientesDb.textContent = '⚠️ Base clientes vazia';
+      }
+    }
+
+    // ================= BUSCA AUTOMÁTICA DE CLIENTE POR CÓDIGO =================
+    function carregarBaseClientesLocal() {
+      try {
+        const raw = localStorage.getItem(CACHE_CLIENTES_KEY);
+        if (raw) {
+          mapaClientes = JSON.parse(raw) || {};
+          const total = Object.keys(mapaClientes).length;
+          if (total > 0) atualizarBadgeBaseClientes(total, true);
+        }
+      } catch {
+        mapaClientes = {};
+      }
+    }
+
+    async function sincronizarBaseClientesNuvem() {
+      try {
+        const novoMapa = {};
+        const tamanhoLote = 1000;
+        let offset = 0;
+
+        while (true) {
+          const resp = await fetch(
+            `${SUPABASE_REST_URL}/${SUPABASE_CLIENTES_TABLE}?select=codigo,nome,telefone,endereco_completo&order=codigo.asc&limit=${tamanhoLote}&offset=${offset}`,
+            { method: 'GET', headers: headersSupabase() }
+          );
+          if (!resp.ok) throw new Error(`Erro ao carregar clientes: ${resp.status}`);
+          const lote = await resp.json();
+          if (!Array.isArray(lote) || lote.length === 0) break;
+
+          lote.forEach(c => {
+            const cod = String(c.codigo || '').trim();
+            if (cod) {
+              novoMapa[cod] = {
+                nome: String(c.nome || '').trim().toUpperCase(),
+                telefone: String(c.telefone || '').trim(),
+                endereco: String(c.endereco_completo || '').trim().toUpperCase()
+              };
+            }
+          });
+
+          if (lote.length < tamanhoLote) break;
+          offset += tamanhoLote;
+        }
+
+        const total = Object.keys(novoMapa).length;
+        if (total > 0) {
+          mapaClientes = novoMapa;
+          localStorage.setItem(CACHE_CLIENTES_KEY, JSON.stringify(mapaClientes));
+          atualizarBadgeBaseClientes(total, false);
+        }
+      } catch (err) {
+        console.warn('Falha ao baixar clientes_acoforte:', err);
+        const totalLocal = Object.keys(mapaClientes).length;
+        atualizarBadgeBaseClientes(totalLocal, true);
+      }
+    }
+
+    async function buscarClientePorCodigo(codigoDigitado, pularParaValor = false) {
+      const codLimpo = String(codigoDigitado || '').trim().replace(/^0+(?=\d)/, '');
+      const codExato = String(codigoDigitado || '').trim();
+
+      if (!codExato) {
+        statusCodigoCliente.textContent = '';
+        codigoClienteInput.classList.remove('input-found');
+        return;
+      }
+
+      // 1. Procura instantaneamente no cache local (0ms)
+      let encontrado = mapaClientes[codExato] || mapaClientes[codLimpo];
+
+      // 2. Se não achar no cache, tenta buscar direto no Supabase
+      if (!encontrado) {
+        try {
+          statusCodigoCliente.textContent = 'Buscando...';
+          const resp = await fetch(
+            `${SUPABASE_REST_URL}/${SUPABASE_CLIENTES_TABLE}?select=codigo,nome,telefone,endereco_completo&codigo=eq.${encodeURIComponent(codExato)}&limit=1`,
+            { method: 'GET', headers: headersSupabase() }
+          );
+          if (resp.ok) {
+            const rows = await resp.json();
+            if (rows && rows.length > 0) {
+              encontrado = {
+                nome: String(rows[0].nome || '').trim().toUpperCase(),
+                telefone: String(rows[0].telefone || '').trim(),
+                endereco: String(rows[0].endereco_completo || '').trim().toUpperCase()
+              };
+              mapaClientes[codExato] = encontrado;
+            }
+          }
+        } catch { /* ignora se offline */ }
+      }
+
+      if (encontrado && encontrado.nome) {
+        clienteInput.value = encontrado.nome;
+        clienteInput.classList.remove('input-invalid');
+        codigoClienteInput.classList.add('input-found');
+        statusCodigoCliente.style.color = 'var(--success)';
+        statusCodigoCliente.textContent = '✓ Encontrado';
+        if (pularParaValor) {
+          valorInput.focus();
+        }
+      } else {
+        codigoClienteInput.classList.remove('input-found');
+        statusCodigoCliente.style.color = 'var(--warning)';
+        statusCodigoCliente.textContent = 'Não achado';
+      }
+    }
+
+    // Preenche em tempo real enquanto digita o código
+    codigoClienteInput.addEventListener('input', () => {
+      buscarClientePorCodigo(codigoClienteInput.value, false);
+    });
+
+    // Se apertar Enter no campo código, já preenche e pula para o Valor
+    codigoClienteInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        buscarClientePorCodigo(codigoClienteInput.value, true);
+      }
+    });
 
     function formatarMoeda(valor) {
       return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -994,9 +1142,11 @@
         console.warn('Falha ao sincronizar com Supabase:', err);
         atualizarStatusNuvem('offline', '⚠️ Offline (usando cache local)');
       }
+      await sincronizarBaseClientesNuvem();
     }
 
     async function inicializarDados() {
+      carregarBaseClientesLocal();
       await abrirBanco();
       let dadosLocais = await lerTodosIndexedDB();
 
@@ -1229,6 +1379,9 @@
       }];
 
       pedidoInput.value = '';
+      codigoClienteInput.value = '';
+      codigoClienteInput.classList.remove('input-found');
+      statusCodigoCliente.textContent = '';
       clienteInput.value = '';
       valorInput.value = '';
       observacaoInput.value = '';
@@ -1579,7 +1732,8 @@
       document.getElementById('lista-motoristas').innerHTML =
         todosMotoristas.map(m => `<option value="${escaparHTML(m)}"></option>`).join('');
 
-      const todosClientes = [...new Set(itensCache.map(i => (i.cliente || '').toUpperCase()).filter(Boolean))].sort();
+      const nomesHistorico = itensCache.map(i => (i.cliente || '').toUpperCase()).filter(Boolean);
+      const todosClientes = [...new Set(nomesHistorico)].sort();
       document.getElementById('lista-clientes').innerHTML =
         todosClientes.map(c => `<option value="${escaparHTML(c)}"></option>`).join('');
 
