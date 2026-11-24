@@ -92,6 +92,7 @@
 
     .input-invalid { border: 2px solid var(--danger) !important; background: #fef2f2 !important; color: #111827 !important; }
     .input-found { border: 2px solid var(--success) !important; }
+    .input-new-client { border: 2px solid var(--primary) !important; }
     .codigo-hint { font-size: 0.72rem; font-weight: 700; color: var(--primary); }
 
     .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
@@ -230,7 +231,7 @@
       print-color-adjust: exact;
     }
 
-    /* ================= ASSINATURA DO MOTORISTA (ESTILO LIMPO CENTRALIZADO) ================= */
+    /* ================= ASSINATURA DO MOTORISTA ================= */
     .print-signatures {
       display: none;
       margin-top: 46px;
@@ -361,7 +362,7 @@
           </div>
           <div class="field">
             <label for="cliente">Cliente *</label>
-            <input type="text" id="cliente" list="lista-clientes" placeholder="Preenche pelo código ou digite" required />
+            <input type="text" id="cliente" list="lista-clientes" placeholder="Preenche pelo código ou digite novo" required />
             <datalist id="lista-clientes"></datalist>
           </div>
           <div class="field">
@@ -377,6 +378,7 @@
           <button type="submit" id="btn-salvar" class="primary">Adicionar ao romaneio</button>
           <button type="button" id="btn-undo" class="secondary" style="display: none;">↩️ Desfazer última edição</button>
           <button type="button" id="btn-limpar-dia" class="secondary">Limpar lançamentos da data</button>
+          <span id="feedback-cliente-novo" class="feedback"></span>
         </div>
       </form>
 
@@ -687,7 +689,7 @@
 
     let db = null;
     let itensCache = [];
-    let mapaClientes = {}; // { "101132": { nome: "...", endereco: "...", telefone: "..." } }
+    let mapaClientes = {}; // { "101132": { codigo: "101132", nome: "...", telefone: "...", bairro: "...", endereco: "..." } }
     let inlineEditId = null;
     let ultimoEstadoUndo = null;
 
@@ -721,6 +723,7 @@
     const valorInput = document.getElementById('valor');
     const observacaoInput = document.getElementById('observacao');
     const buscaRapidaInput = document.getElementById('busca-rapida');
+    const feedbackClienteNovo = document.getElementById('feedback-cliente-novo');
     const btnUndo = document.getElementById('btn-undo');
     const badgeNuvem = document.getElementById('badge-nuvem');
     const badgeClientesDb = document.getElementById('badge-clientes-db');
@@ -786,7 +789,7 @@
       }
     }
 
-    // ================= BUSCA AUTOMÁTICA DE CLIENTE POR CÓDIGO =================
+    // ================= BASE DE CLIENTES & AUTO-CADASTRO =================
     function carregarBaseClientesLocal() {
       try {
         const raw = localStorage.getItem(CACHE_CLIENTES_KEY);
@@ -800,6 +803,12 @@
       }
     }
 
+    function salvarBaseClientesLocal() {
+      try {
+        localStorage.setItem(CACHE_CLIENTES_KEY, JSON.stringify(mapaClientes));
+      } catch { /* ignora limite storage */ }
+    }
+
     async function sincronizarBaseClientesNuvem() {
       try {
         const novoMapa = {};
@@ -808,7 +817,7 @@
 
         while (true) {
           const resp = await fetch(
-            `${SUPABASE_REST_URL}/${SUPABASE_CLIENTES_TABLE}?select=codigo,nome,telefone,endereco_completo&order=codigo.asc&limit=${tamanhoLote}&offset=${offset}`,
+            `${SUPABASE_REST_URL}/${SUPABASE_CLIENTES_TABLE}?select=codigo,nome,telefone,bairro,endereco_completo&order=codigo.asc&limit=${tamanhoLote}&offset=${offset}`,
             { method: 'GET', headers: headersSupabase() }
           );
           if (!resp.ok) throw new Error(`Erro ao carregar clientes: ${resp.status}`);
@@ -819,8 +828,10 @@
             const cod = String(c.codigo || '').trim();
             if (cod) {
               novoMapa[cod] = {
+                codigo: cod,
                 nome: String(c.nome || '').trim().toUpperCase(),
                 telefone: String(c.telefone || '').trim(),
+                bairro: String(c.bairro || '').trim().toUpperCase(),
                 endereco: String(c.endereco_completo || '').trim().toUpperCase()
               };
             }
@@ -833,7 +844,7 @@
         const total = Object.keys(novoMapa).length;
         if (total > 0) {
           mapaClientes = novoMapa;
-          localStorage.setItem(CACHE_CLIENTES_KEY, JSON.stringify(mapaClientes));
+          salvarBaseClientesLocal();
           atualizarBadgeBaseClientes(total, false);
         }
       } catch (err) {
@@ -843,36 +854,93 @@
       }
     }
 
+    function gerarProximoCodigoCliente() {
+      const codigosNumericos = Object.keys(mapaClientes)
+        .map(k => parseInt(k, 10))
+        .filter(n => !isNaN(n));
+      if (!codigosNumericos.length) return '100001';
+      return String(Math.max(...codigosNumericos) + 1);
+    }
+
+    async function salvarNovoClienteNoBanco(codigoInformado, nomeCliente) {
+      const nomeLimpo = String(nomeCliente || '').trim().toUpperCase();
+      if (!nomeLimpo) return null;
+
+      let codLimpo = String(codigoInformado || '').trim().replace(/\D/g, '');
+
+      if (codLimpo && mapaClientes[codLimpo]) {
+        return mapaClientes[codLimpo];
+      }
+
+      if (!codLimpo) {
+        const existentePorNome = Object.values(mapaClientes).find(c => c.nome === nomeLimpo);
+        if (existentePorNome) {
+          return existentePorNome;
+        }
+        codLimpo = gerarProximoCodigoCliente();
+      }
+
+      const novoRegistro = {
+        codigo: codLimpo,
+        nome: nomeLimpo,
+        telefone: '',
+        bairro: '',
+        endereco: ''
+      };
+
+      mapaClientes[codLimpo] = novoRegistro;
+      salvarBaseClientesLocal();
+      atualizarBadgeBaseClientes(Object.keys(mapaClientes).length, false);
+
+      try {
+        const resp = await fetch(`${SUPABASE_REST_URL}/${SUPABASE_CLIENTES_TABLE}?on_conflict=codigo`, {
+          method: 'POST',
+          headers: headersSupabase({ 'Prefer': 'resolution=ignore-duplicates,return=minimal' }),
+          body: JSON.stringify([{
+            codigo: Number(codLimpo),
+            nome: nomeLimpo
+          }])
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      } catch (err) {
+        console.warn('Cliente salvo no cache local, mas houve erro ao enviar para clientes_acoforte:', err);
+      }
+
+      return novoRegistro;
+    }
+
     async function buscarClientePorCodigo(codigoDigitado, pularParaValor = false) {
       const codLimpo = String(codigoDigitado || '').trim().replace(/^0+(?=\d)/, '');
       const codExato = String(codigoDigitado || '').trim();
 
       if (!codExato) {
         statusCodigoCliente.textContent = '';
-        codigoClienteInput.classList.remove('input-found');
+        codigoClienteInput.classList.remove('input-found', 'input-new-client');
         return;
       }
 
-      // 1. Procura instantaneamente no cache local (0ms)
       let encontrado = mapaClientes[codExato] || mapaClientes[codLimpo];
 
-      // 2. Se não achar no cache, tenta buscar direto no Supabase
       if (!encontrado) {
         try {
+          statusCodigoCliente.style.color = 'var(--primary)';
           statusCodigoCliente.textContent = 'Buscando...';
           const resp = await fetch(
-            `${SUPABASE_REST_URL}/${SUPABASE_CLIENTES_TABLE}?select=codigo,nome,telefone,endereco_completo&codigo=eq.${encodeURIComponent(codExato)}&limit=1`,
+            `${SUPABASE_REST_URL}/${SUPABASE_CLIENTES_TABLE}?select=codigo,nome,telefone,bairro,endereco_completo&codigo=eq.${encodeURIComponent(codExato)}&limit=1`,
             { method: 'GET', headers: headersSupabase() }
           );
           if (resp.ok) {
             const rows = await resp.json();
             if (rows && rows.length > 0) {
               encontrado = {
+                codigo: String(rows[0].codigo || codExato),
                 nome: String(rows[0].nome || '').trim().toUpperCase(),
                 telefone: String(rows[0].telefone || '').trim(),
+                bairro: String(rows[0].bairro || '').trim().toUpperCase(),
                 endereco: String(rows[0].endereco_completo || '').trim().toUpperCase()
               };
               mapaClientes[codExato] = encontrado;
+              salvarBaseClientesLocal();
             }
           }
         } catch { /* ignora se offline */ }
@@ -881,25 +949,28 @@
       if (encontrado && encontrado.nome) {
         clienteInput.value = encontrado.nome;
         clienteInput.classList.remove('input-invalid');
+        codigoClienteInput.classList.remove('input-new-client');
         codigoClienteInput.classList.add('input-found');
         statusCodigoCliente.style.color = 'var(--success)';
-        statusCodigoCliente.textContent = '✓ Encontrado';
+        statusCodigoCliente.textContent = '✓ Cadastrado';
         if (pularParaValor) {
           valorInput.focus();
         }
       } else {
         codigoClienteInput.classList.remove('input-found');
-        statusCodigoCliente.style.color = 'var(--warning)';
-        statusCodigoCliente.textContent = 'Não achado';
+        codigoClienteInput.classList.add('input-new-client');
+        statusCodigoCliente.style.color = 'var(--primary)';
+        statusCodigoCliente.textContent = '+ Novo (salva auto)';
+        if (pularParaValor) {
+          clienteInput.focus();
+        }
       }
     }
 
-    // Preenche em tempo real enquanto digita o código
     codigoClienteInput.addEventListener('input', () => {
       buscarClientePorCodigo(codigoClienteInput.value, false);
     });
 
-    // Se apertar Enter no campo código, já preenche e pula para o Valor
     codigoClienteInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -1352,6 +1423,7 @@
       const turnoValor = normalizarTurno(turnoInput.value);
       const motoristaValor = motoristaInput.value.trim().toUpperCase();
       const pedidoValor = pedidoInput.value.trim().toUpperCase();
+      const codigoDigitado = codigoClienteInput.value.trim();
       const clienteValor = clienteInput.value.trim().toUpperCase();
       const obsValor = observacaoInput.value.trim().toUpperCase();
 
@@ -1363,6 +1435,18 @@
       if (duplicado) {
         const confirmar = confirm(`O pedido "${pedidoValor}" já foi lançado na data ${formatarDataBR(dataValor)}. Deseja lançar mesmo assim?`);
         if (!confirmar) return;
+      }
+
+      // Verifica se é cliente novo e já cadastra na tabela clientes_acoforte
+      const jaExisteNome = Object.values(mapaClientes).some(c => c.nome === clienteValor);
+      const jaExisteCod = codigoDigitado && Boolean(mapaClientes[codigoDigitado]);
+
+      if (!jaExisteCod && !jaExisteNome) {
+        const salvoCliente = await salvarNovoClienteNoBanco(codigoDigitado, clienteValor);
+        if (salvoCliente) {
+          feedbackClienteNovo.textContent = `✓ Cliente "${salvoCliente.nome}" salvo na base (Cód: ${salvoCliente.codigo})!`;
+          setTimeout(() => { feedbackClienteNovo.textContent = ''; }, 5000);
+        }
       }
 
       const novaLista = [...itensCache, {
@@ -1380,7 +1464,7 @@
 
       pedidoInput.value = '';
       codigoClienteInput.value = '';
-      codigoClienteInput.classList.remove('input-found');
+      codigoClienteInput.classList.remove('input-found', 'input-new-client');
       statusCodigoCliente.textContent = '';
       clienteInput.value = '';
       valorInput.value = '';
@@ -1732,10 +1816,11 @@
       document.getElementById('lista-motoristas').innerHTML =
         todosMotoristas.map(m => `<option value="${escaparHTML(m)}"></option>`).join('');
 
+      const nomesBase = Object.values(mapaClientes).map(c => c.nome).filter(Boolean);
       const nomesHistorico = itensCache.map(i => (i.cliente || '').toUpperCase()).filter(Boolean);
-      const todosClientes = [...new Set(nomesHistorico)].sort();
+      const todosClientes = [...new Set([...nomesHistorico, ...nomesBase])].sort();
       document.getElementById('lista-clientes').innerHTML =
-        todosClientes.map(c => `<option value="${escaparHTML(c)}"></option>`).join('');
+        todosClientes.slice(0, 1500).map(c => `<option value="${escaparHTML(c)}"></option>`).join('');
 
       // ABA 1: Cadastro
       const termoBusca = buscaRapidaInput.value.trim().toUpperCase();
@@ -1916,7 +2001,6 @@
       document.getElementById('qtd-impressao').textContent = `Entregas no dia: ${itensImp.length}`;
       document.getElementById('total-impressao').textContent = `Total do romaneio: ${formatarMoeda(somaImp)}`;
 
-      // Atualiza metadados do cabeçalho oficial Aço Forte e assinatura única do motorista
       const dataRotaFormatada = formatarDataBR(filtroData.value);
       document.getElementById('print-data-rota').textContent = dataRotaFormatada;
       document.getElementById('print-hora-emissao').textContent = obterHoraAtualBR();
