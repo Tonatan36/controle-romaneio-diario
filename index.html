@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Controle de Romaneio Diário - Aço Forte</title>
+  <title>Controle de Romaneio & CRM — Aço Forte</title>
   <meta name="theme-color" content="#0f172a" />
   <link rel="manifest" href="manifest.json" />
   <style>
@@ -84,11 +84,11 @@
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; margin-bottom: 14px; }
     .field { display: flex; flex-direction: column; gap: 4px; }
     label { font-size: 0.84rem; font-weight: 600; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; gap: 4px; }
-    input, select { padding: 10px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-main); border-radius: 6px; font-size: 16px; width: 100%; }
-    input:focus, select:focus { outline: 2px solid var(--primary); border-color: var(--primary); }
+    input, select, textarea { padding: 10px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-main); border-radius: 6px; font-size: 16px; width: 100%; }
+    input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); border-color: var(--primary); }
 
-    input[type="text"] { text-transform: uppercase; }
-    input[type="text"]::placeholder { text-transform: none; color: var(--text-muted); }
+    #romaneio-workspace input[type="text"] { text-transform: uppercase; }
+    #romaneio-workspace input[type="text"]::placeholder { text-transform: none; color: var(--text-muted); }
 
     .input-invalid { border: 2px solid var(--danger) !important; background: #fef2f2 !important; color: #111827 !important; }
     .input-found { border: 2px solid var(--success) !important; }
@@ -104,6 +104,8 @@
     button.success { background: var(--success); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
     button.danger { background: var(--danger); color: #fff; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.82rem; min-height: 32px; font-weight: 600; }
     button.secondary { background: var(--secondary-bg); color: var(--secondary-text); border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    button.btn-crm-open { background: #18181b; color: #faf6f0; border: 1px solid #3f3f46; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+    button.btn-crm-open:hover { background: #27272a; }
 
     .toolbar-busca { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; padding-top: 10px; border-top: 1px solid var(--border-light); }
     .busca-box { flex: 1; min-width: 240px; }
@@ -151,112 +153,522 @@
     .backup-box { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-light); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
     /* ================= CABEÇALHO OFICIAL PARA IMPRESSÃO (DOCUMENTO AÇO FORTE) ================= */
-    .print-header-box {
+    .print-header-box { display: none; border: 1.5px solid #000; margin-bottom: 10px; background: #fff; color: #000; }
+    .print-company-row { display: flex; align-items: center; padding: 8px 12px; border-bottom: 1.5px solid #000; gap: 14px; }
+    .print-logo-box { width: 132px; height: 82px; background: #facc15; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; padding: 4px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .print-company-details { flex: 1; text-align: center; }
+    .print-company-name { font-size: 1.15rem; font-weight: 800; letter-spacing: 0.3px; margin-bottom: 6px; text-transform: uppercase; }
+    .print-company-lines { text-align: left; display: inline-block; font-size: 0.78rem; line-height: 1.45; }
+    .print-doc-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; gap: 12px; }
+    .print-doc-spacer { width: 185px; }
+    .print-doc-title { flex: 1; text-align: center; font-size: 1.32rem; font-weight: 900; letter-spacing: 0.6px; text-transform: uppercase; }
+    .print-doc-meta { width: 185px; text-align: right; font-size: 0.78rem; line-height: 1.35; }
+    .print-filter-bar { border-top: 1px solid #000; padding: 4px 12px; font-size: 0.78rem; font-weight: 700; display: flex; justify-content: space-between; background: #f8fafc; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    .print-signatures { display: none; margin-top: 46px; break-inside: avoid; page-break-inside: avoid; color: #000; }
+    .print-sig-single { width: 320px; margin: 0 auto; text-align: center; }
+    .print-sig-line { border-top: 1.2px solid #000; padding-top: 5px; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+    .print-sig-name { font-size: 0.85rem; font-weight: 400; margin-top: 2px; text-transform: uppercase; }
+    .print-turno-text { display: none; }
+
+    /* ================= WORKSPACE CRM (ESTILO VÉRTICE / CREME & PRETO) ================= */
+    body.crm-mode {
+      background: #ebe4d8;
+      color: #18181b;
+      padding: 12px;
+    }
+    #crm-workspace {
       display: none;
-      border: 1.5px solid #000;
-      margin-bottom: 10px;
-      background: #fff;
-      color: #000;
+      max-width: 1480px;
+      margin: 0 auto;
+      min-height: calc(100vh - 24px);
+      background: #f7f3ec;
+      border-radius: 24px;
+      box-shadow: 0 18px 45px rgba(24, 24, 27, 0.12);
+      border: 1px solid #e6dfd3;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
-    .print-company-row {
-      display: flex;
-      align-items: center;
-      padding: 8px 12px;
-      border-bottom: 1.5px solid #000;
-      gap: 14px;
-    }
-    .print-logo-box {
-      width: 132px;
-      height: 82px;
-      background: #facc15;
+    body.crm-mode #romaneio-workspace { display: none !important; }
+    body.crm-mode #crm-workspace { display: flex; }
+
+    .crm-sidebar {
+      width: 295px;
+      background: #f5f0e6;
+      border-right: 1px solid #e7dfd1;
+      padding: 20px 16px;
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
+      flex-shrink: 0;
+      transition: width 0.2s ease;
+    }
+    .crm-brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding: 0 4px;
+    }
+    .crm-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+    .crm-logo-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: #18181b;
+      color: #facc15;
+      font-weight: 900;
+      font-size: 1.15rem;
+      display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
-      padding: 4px;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      letter-spacing: -0.5px;
     }
-    .print-company-details {
-      flex: 1;
-      text-align: center;
+    .crm-brand-title { font-weight: 800; font-size: 1.08rem; color: #18181b; line-height: 1.15; }
+    .crm-brand-sub { font-size: 0.76rem; color: #78716c; font-weight: 500; }
+
+    .crm-search-box {
+      position: relative;
+      margin-bottom: 16px;
     }
-    .print-company-name {
-      font-size: 1.15rem;
-      font-weight: 800;
-      letter-spacing: 0.3px;
-      margin-bottom: 6px;
-      text-transform: uppercase;
+    .crm-search-box input {
+      width: 100%;
+      background: #ece6da;
+      border: 1px solid #e2dacb;
+      border-radius: 999px;
+      padding: 10px 46px 10px 36px;
+      font-size: 0.88rem;
+      color: #18181b;
+      text-transform: none !important;
     }
-    .print-company-lines {
-      text-align: left;
-      display: inline-block;
-      font-size: 0.78rem;
-      line-height: 1.45;
+    .crm-search-box input:focus {
+      outline: 2px solid #18181b;
+      background: #fffdf9;
     }
-    .print-doc-row {
+    .crm-search-icon {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.9rem;
+      color: #78716c;
+      pointer-events: none;
+    }
+    .crm-kbd-hint {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #e2dacb;
+      color: #57534e;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+
+    .crm-nav { display: flex; flex-direction: column; gap: 6px; }
+    .crm-nav-btn {
+      width: 100%;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 6px 12px;
-      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      color: #292524;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
     }
-    .print-doc-spacer {
-      width: 185px;
+    .crm-nav-btn:hover { background: #eae3d5; }
+    .crm-nav-btn.active {
+      background: #18181b;
+      color: #faf7f2;
+      box-shadow: 0 4px 12px rgba(24, 24, 27, 0.18);
     }
-    .print-doc-title {
-      flex: 1;
-      text-align: center;
-      font-size: 1.32rem;
-      font-weight: 900;
-      letter-spacing: 0.6px;
-      text-transform: uppercase;
+    .crm-nav-left { display: flex; align-items: center; gap: 10px; }
+    .crm-nav-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.88rem;
+      background: rgba(0,0,0,0.06);
     }
-    .print-doc-meta {
-      width: 185px;
-      text-align: right;
-      font-size: 0.78rem;
-      line-height: 1.35;
+    .crm-nav-btn.active .crm-nav-icon {
+      background: #facc15;
+      color: #18181b;
     }
-    .print-filter-bar {
-      border-top: 1px solid #000;
-      padding: 4px 12px;
-      font-size: 0.78rem;
+    .crm-pill-count {
+      background: #e7dfd1;
+      color: #44403c;
+      font-size: 0.74rem;
       font-weight: 700;
-      display: flex;
-      justify-content: space-between;
-      background: #f8fafc;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+    .crm-nav-btn.active .crm-pill-count {
+      background: #3f3f46;
+      color: #faf7f2;
     }
 
-    /* ================= ASSINATURA DO MOTORISTA ================= */
-    .print-signatures {
-      display: none;
-      margin-top: 46px;
-      break-inside: avoid;
-      page-break-inside: avoid;
-      color: #000;
+    .crm-negocios-group {
+      background: #efe9dd;
+      border-radius: 18px;
+      padding: 6px;
+      margin: 2px 0;
     }
-    .print-sig-single {
-      width: 320px;
-      margin: 0 auto;
-      text-align: center;
+    .crm-subnav {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 4px 6px 6px 14px;
+      border-left: 1.5px solid #d6cec0;
+      margin-left: 20px;
+      margin-top: 4px;
     }
-    .print-sig-line {
-      border-top: 1.2px solid #000;
-      padding-top: 5px;
+    .crm-sub-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #44403c;
+      min-height: 30px;
+      text-align: left;
+    }
+    .crm-sub-item:hover, .crm-sub-item.active {
+      background: #e4dccd;
+      color: #18181b;
+      font-weight: 700;
+    }
+    .crm-sub-left { display: flex; align-items: center; gap: 8px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+    .dot-qual { background: #eab308; }
+    .dot-prop { background: #f97316; }
+    .dot-neg { background: #16a34a; }
+    .dot-fech { background: #2563eb; }
+    .dot-perd { background: #dc2626; }
+    .crm-sub-meta { font-size: 0.72rem; color: #78716c; font-weight: 600; white-space: nowrap; }
+
+    .crm-sidebar-footer {
+      border-top: 1px solid #e2dacb;
+      padding-top: 14px;
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .crm-seller-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ece5d8;
+      padding: 9px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      border: 1px solid #dfd6c7;
+    }
+    .crm-seller-card:hover { background: #e3dacb; }
+    .crm-seller-info { display: flex; align-items: center; gap: 10px; }
+    .crm-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #d6cec0;
+      color: #18181b;
+      font-weight: 800;
+      font-size: 0.82rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .crm-seller-name { font-weight: 800; font-size: 0.88rem; color: #18181b; line-height: 1.2; }
+    .crm-seller-role { font-size: 0.72rem; color: #78716c; }
+    .btn-back-romaneio {
+      width: 100%;
+      background: #18181b;
+      color: #facc15;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 700;
+      font-size: 0.84rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-back-romaneio:hover { background: #27272a; }
+
+    .crm-main {
+      flex: 1;
+      padding: 22px 26px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .crm-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .crm-page-title h2 { margin: 0; font-size: 1.45rem; font-weight: 800; color: #18181b; }
+    .crm-page-title p { margin: 2px 0 0 0; font-size: 0.84rem; color: #78716c; }
+    .crm-topbar-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .crm-select-pill {
+      background: #ece6da;
+      border: 1px solid #dcd3c4;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #18181b;
+      width: auto;
+    }
+    .crm-btn-dark {
+      background: #18181b;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 9px 18px;
       font-size: 0.85rem;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
+      cursor: pointer;
     }
-    .print-sig-name {
-      font-size: 0.85rem;
-      font-weight: 400;
-      margin-top: 2px;
-      text-transform: uppercase;
+    .crm-btn-dark:hover { background: #27272a; }
+    .crm-btn-soft {
+      background: #ece6da;
+      color: #18181b;
+      border: 1px solid #dcd3c4;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.83rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .crm-btn-soft.active-filter {
+      background: #18181b;
+      color: #facc15;
+      border-color: #18181b;
+    }
+
+    .balcao-express-card {
+      background: #fffdf9;
+      border: 1px solid #e6dfd3;
+      border-radius: 18px;
+      padding: 14px 18px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+    }
+    .balcao-express-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .balcao-express-title { font-weight: 800; font-size: 0.92rem; color: #18181b; display: flex; align-items: center; gap: 6px; }
+    .balcao-cat-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .cat-pill {
+      background: #f2ece1;
+      border: 1px solid #dfd7c8;
+      color: #44403c;
+      border-radius: 999px;
+      padding: 4px 11px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 28px;
+    }
+    .cat-pill.active { background: #18181b; color: #facc15; border-color: #18181b; }
+    .balcao-express-grid {
+      display: grid;
+      grid-template-columns: 115px 1.4fr 135px 150px 145px auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .balcao-express-grid input, .balcao-express-grid select {
+      background: #f7f3ec;
+      border: 1px solid #dfd7c8;
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-size: 0.88rem;
+      color: #18181b;
+    }
+
+    .crm-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .crm-kpi-card {
+      background: #fffdf9;
+      border: 1px solid #e6dfd3;
+      border-radius: 18px;
+      padding: 15px 17px;
+    }
+    .crm-kpi-label { font-size: 0.75rem; font-weight: 700; color: #78716c; text-transform: uppercase; letter-spacing: 0.4px; }
+    .crm-kpi-value { font-size: 1.45rem; font-weight: 900; color: #18181b; margin: 5px 0 3px 0; }
+    .crm-kpi-sub { font-size: 0.76rem; color: #57534e; }
+
+    .crm-bi-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(230px, 1fr));
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .kanban-col {
+      background: #efe9de;
+      border: 1px solid #e3dacb;
+      border-radius: 18px;
+      padding: 12px;
+      min-height: 430px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .kanban-col.drag-over {
+      background: #e5decb;
+      border: 2px dashed #18181b;
+    }
+    .kanban-col-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #dfd6c7;
+    }
+    .kanban-col-title { font-weight: 800; font-size: 0.86rem; color: #18181b; display: flex; align-items: center; gap: 6px; }
+    .kanban-col-sum { font-size: 0.76rem; font-weight: 700; color: #57534e; }
+    .kanban-cards { display: flex; flex-direction: column; gap: 9px; flex: 1; }
+    .kanban-card {
+      background: #fffdf9;
+      border: 1px solid #e5ddd0;
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      cursor: grab;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.07); }
+    .kcard-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .kcard-cat { font-size: 0.7rem; font-weight: 800; background: #f2ece1; color: #44403c; padding: 2px 8px; border-radius: 999px; }
+    .kcard-seller { font-size: 0.7rem; font-weight: 800; background: #18181b; color: #facc15; padding: 2px 7px; border-radius: 999px; }
+    .kcard-client { font-weight: 800; font-size: 0.9rem; color: #18181b; margin-bottom: 4px; line-height: 1.25; }
+    .kcard-val { font-weight: 900; font-size: 1rem; color: #15803d; margin-bottom: 4px; }
+    .kcard-meta { font-size: 0.74rem; color: #78716c; margin-bottom: 8px; }
+    .kcard-actions { display: flex; gap: 5px; flex-wrap: wrap; border-top: 1px solid #f0e9dd; padding-top: 8px; }
+    .kcard-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 26px;
+    }
+    .kcard-btn-wpp { background: #dcfce7; color: #166534; }
+    .kcard-btn-move { background: #f2ece1; color: #18181b; }
+    .kcard-btn-del { background: #fee2e2; color: #991b1b; }
+
+    .crm-panel-card {
+      background: #fffdf9;
+      border: 1px solid #e6dfd3;
+      border-radius: 18px;
+      padding: 18px;
+    }
+    .crm-table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    .crm-table th { background: #f2ece1; color: #44403c; border: 1px solid #e4dccd; font-size: 0.78rem; padding: 8px 10px; }
+    .crm-table td { border: 1px solid #ece5d8; color: #18181b; font-size: 0.83rem; padding: 8px 10px; }
+    .status-recencia { font-size: 0.71rem; font-weight: 800; padding: 3px 9px; border-radius: 999px; display: inline-block; white-space: nowrap; }
+    .rec-ativo { background: #dcfce7; color: #166534; }
+    .rec-atencao { background: #fef3c7; color: #92400e; }
+    .rec-inativo { background: #fee2e2; color: #991b1b; }
+
+    /* Badges Curva ABC */
+    .abc-badge { font-size: 0.72rem; font-weight: 900; padding: 3px 9px; border-radius: 999px; display: inline-block; letter-spacing: 0.3px; }
+    .abc-A { background: #18181b; color: #facc15; }
+    .abc-B { background: #dbeafe; color: #1e40af; }
+    .abc-C { background: #f3f4f6; color: #4b5563; }
+
+    .crm-modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(24, 24, 27, 0.55);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .crm-modal-backdrop.open { display: flex; }
+    .crm-modal {
+      background: #fffdf9;
+      border: 1px solid #e6dfd3;
+      border-radius: 22px;
+      padding: 22px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      color: #18181b;
+    }
+    .crm-modal h3 { margin: 0 0 6px 0; font-size: 1.2rem; font-weight: 800; }
+    .seller-choice-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .seller-choice-btn {
+      background: #f5f0e6;
+      border: 2px solid #dfd6c7;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #18181b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .seller-choice-btn:hover { background: #18181b; color: #facc15; border-color: #18181b; }
+
+    @media (max-width: 1120px) {
+      .crm-bi-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 980px) {
+      body.crm-mode #crm-workspace { flex-direction: column; }
+      .crm-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #e7dfd1; }
+      .balcao-express-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 640px) {
@@ -284,7 +696,8 @@
 
     @media print {
       body { background: #fff !important; color: #000 !important; padding: 0; }
-      .container { box-shadow: none; max-width: 100%; padding: 0; background: #fff !important; }
+      #crm-workspace, .crm-modal-backdrop { display: none !important; }
+      #romaneio-workspace { display: block !important; box-shadow: none; max-width: 100%; padding: 0; background: #fff !important; }
       .top-bar, .tabs, .no-print, button, .badge-turno { display: none !important; }
       .print-turno-text { display: inline !important; }
       .tab-panel { display: none !important; }
@@ -299,11 +712,12 @@
       th { background: #f1f5f9 !important; font-weight: 800; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .summary { color: #000 !important; border-top: 1px solid #000; padding-top: 8px; }
     }
-    .print-turno-text { display: none; }
   </style>
 </head>
 <body>
-  <div class="container">
+
+  <!-- ================= WORKSPACE 1: ROMANEIO DE ENTREGA (100% INTACTO) ================= -->
+  <div id="romaneio-workspace" class="container">
     <div class="top-bar no-print">
       <div class="title-area">
         <h1>Romaneio de Entrega — Aço Forte</h1>
@@ -315,6 +729,7 @@
         </div>
       </div>
       <div class="top-actions">
+        <button type="button" id="btn-abrir-crm" class="btn-crm-open" title="Abrir CRM Comercial & Kanban">📊 Abrir CRM</button>
         <button type="button" id="btn-instalar-pwa" class="success" style="display: none;">📲 Instalar App</button>
         <button type="button" id="btn-sincronizar" class="secondary" title="Buscar atualizações do banco na nuvem">🔄 Atualizar Nuvem</button>
         <button type="button" id="btn-tema" class="secondary" title="Alternar modo claro/escuro">🌙 Modo Escuro</button>
@@ -514,7 +929,6 @@
         </div>
       </div>
 
-      <!-- CABEÇALHO OFICIAL DA AÇO FORTE -->
       <div class="print-header-box">
         <div class="print-company-row">
           <div class="print-logo-box">
@@ -572,7 +986,6 @@
         <span id="total-impressao">Total do romaneio: R$ 0,00</span>
       </div>
 
-      <!-- ASSINATURA ÚNICA DO MOTORISTA -->
       <div class="print-signatures">
         <div class="print-sig-single">
           <div class="print-sig-line">ASSINATURA DO MOTORISTA</div>
@@ -670,12 +1083,423 @@
     </section>
   </div>
 
+  <!-- ================= WORKSPACE 2: CRM COMERCIAL AÇO FORTE ================= -->
+  <div id="crm-workspace">
+    <aside class="crm-sidebar">
+      <div>
+        <div class="crm-brand-row">
+          <div class="crm-brand">
+            <div class="crm-logo-badge">AF</div>
+            <div>
+              <div class="crm-brand-title">Aço Forte</div>
+              <div class="crm-brand-sub">CRM & Inteligência</div>
+            </div>
+          </div>
+          <span id="crm-sync-dot" title="Status Supabase" style="font-size:0.75rem;font-weight:800;color:#15803d;">● Online</span>
+        </div>
+
+        <div class="crm-search-box">
+          <span class="crm-search-icon">🔍</span>
+          <input type="text" id="crm-global-search" placeholder="Buscar negócio, contato..." autocomplete="off" />
+          <span class="crm-kbd-hint">Ctrl K</span>
+        </div>
+
+        <nav class="crm-nav">
+          <button type="button" class="crm-nav-btn active" data-crm-view="visao-geral">
+            <span class="crm-nav-left"><span class="crm-nav-icon">🏠</span> Visão geral</span>
+          </button>
+
+          <div class="crm-negocios-group">
+            <button type="button" class="crm-nav-btn" data-crm-view="negocios">
+              <span class="crm-nav-left"><span class="crm-nav-icon">💼</span> Negócios</span>
+              <span style="font-size:0.75rem;">▲</span>
+            </button>
+            <div class="crm-subnav">
+              <button type="button" class="crm-sub-item" data-crm-stage="QUALIFICACAO">
+                <span class="crm-sub-left"><span class="dot dot-qual"></span> Qualificação</span>
+                <span id="sub-meta-qual" class="crm-sub-meta">0 • R$ 0</span>
+              </button>
+              <button type="button" class="crm-sub-item" data-crm-stage="PROPOSTA">
+                <span class="crm-sub-left"><span class="dot dot-prop"></span> Proposta enviada</span>
+                <span id="sub-meta-prop" class="crm-sub-meta">0 • R$ 0</span>
+              </button>
+              <button type="button" class="crm-sub-item" data-crm-stage="NEGOCIACAO">
+                <span class="crm-sub-left"><span class="dot dot-neg"></span> Negociação</span>
+                <span id="sub-meta-neg" class="crm-sub-meta">0 • R$ 0</span>
+              </button>
+              <button type="button" class="crm-sub-item" data-crm-stage="FECHAMENTO">
+                <span class="crm-sub-left"><span class="dot dot-fech"></span> Fechamento</span>
+                <span id="sub-meta-fech" class="crm-sub-meta">0 • R$ 0</span>
+              </button>
+              <button type="button" class="crm-sub-item" data-crm-stage="PERDIDO">
+                <span class="crm-sub-left"><span class="dot dot-perd"></span> Perdidos</span>
+                <span id="sub-meta-perd" class="crm-sub-meta">0 • R$ 0</span>
+              </button>
+            </div>
+          </div>
+
+          <button type="button" class="crm-nav-btn" data-crm-view="contatos">
+            <span class="crm-nav-left"><span class="crm-nav-icon">👤</span> Contatos & ABC</span>
+            <span id="crm-count-contatos" class="crm-pill-count">0</span>
+          </button>
+
+          <button type="button" class="crm-nav-btn" data-crm-view="propostas">
+            <span class="crm-nav-left"><span class="crm-nav-icon">📄</span> Propostas</span>
+            <span id="crm-count-propostas" class="crm-pill-count">0 abertas</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="crm-sidebar-footer">
+        <div class="crm-seller-card" onclick="abrirModalVendedor()" title="Clique para trocar o vendedor deste computador">
+          <div class="crm-seller-info">
+            <div id="crm-seller-avatar" class="crm-avatar">EW</div>
+            <div>
+              <div id="crm-seller-name" class="crm-seller-name">Ewerton</div>
+              <div class="crm-seller-role">Comercial • Aço Forte JP</div>
+            </div>
+          </div>
+          <span style="font-size:0.75rem;color:#78716c;font-weight:700;">Trocar</span>
+        </div>
+
+        <button type="button" id="btn-voltar-romaneio" class="btn-back-romaneio">
+          🚚 Voltar ao Romaneio
+        </button>
+      </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL DO CRM -->
+    <main class="crm-main">
+      <div class="crm-topbar">
+        <div class="crm-page-title">
+          <h2 id="crm-view-title">Visão Geral Comercial</h2>
+          <p id="crm-view-subtitle">Indicadores de balcão, curva ABC, ticket médio, frequência e entregas integradas</p>
+        </div>
+
+        <div class="crm-topbar-controls">
+          <select id="crm-filtro-vendedor" class="crm-select-pill" aria-label="Filtrar vendedor">
+            <option value="TODOS">👥 Toda a Loja (4 vendedores)</option>
+            <option value="Ewerton">👤 Ewerton</option>
+            <option value="Alexandre">👤 Alexandre</option>
+            <option value="Paulo">👤 Paulo</option>
+            <option value="Yan">👤 Yan</option>
+          </select>
+          <button type="button" class="crm-btn-soft" onclick="sincronizarDadosCRM()">🔄 Sincronizar</button>
+          <button type="button" class="crm-btn-dark" onclick="abrirModalNovoNegocio()">+ Novo Negócio / Orçamento</button>
+        </div>
+      </div>
+
+      <!-- BARRA BALCÃO EXPRESS -->
+      <div class="balcao-express-card">
+        <div class="balcao-express-header">
+          <div class="balcao-express-title">⚡ Balcão Express — Registrar Retira na Loja / Compra Rápida (sem sujar o romaneio)</div>
+          <div class="balcao-cat-pills" id="balcao-cat-pills">
+            <button type="button" class="cat-pill active" data-cat="AÇO / PERFIS">AÇO / PERFIS</button>
+            <button type="button" class="cat-pill" data-cat="TELHA">TELHA</button>
+            <button type="button" class="cat-pill" data-cat="FORRO PVC">FORRO PVC</button>
+            <button type="button" class="cat-pill" data-cat="ALUMÍNIO">ALUMÍNIO</button>
+            <button type="button" class="cat-pill" data-cat="FERRAGENS">FERRAGENS</button>
+            <button type="button" class="cat-pill" data-cat="POSTE ENERGISA">POSTE</button>
+          </div>
+        </div>
+        <form id="form-balcao-express" class="balcao-express-grid">
+          <input type="text" id="bx-codigo" inputmode="numeric" placeholder="Cód. cliente" autocomplete="off" />
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="bx-cliente" list="lista-clientes" placeholder="Nome do cliente ou clique em Avulso" required />
+            <button type="button" class="crm-btn-soft" style="white-space:nowrap;border-radius:10px;padding:0 10px;" onclick="document.getElementById('bx-cliente').value='BALCÃO AVULSO';document.getElementById('bx-valor').focus();">Avulso</button>
+          </div>
+          <input type="text" id="bx-telefone" placeholder="WhatsApp (DDD)" />
+          <input type="text" id="bx-valor" inputmode="numeric" placeholder="Valor R$ 0,00" required />
+          <select id="bx-saida">
+            <option value="RETIRA BALCÃO">🛍️ Retira Balcão</option>
+            <option value="ENTREGA LOJA">🚚 Entrega Loja (+Romaneio)</option>
+          </select>
+          <button type="submit" class="crm-btn-dark" style="border-radius:10px;">Lançar ✓</button>
+        </form>
+      </div>
+
+      <!-- VIEW 1: VISÃO GERAL (KPIs + RANKING CLIENTES CURVA A + RANKING VENDEDORES) -->
+      <section id="crm-view-visao-geral" class="crm-view-section">
+        <div class="crm-kpi-grid">
+          <div class="crm-kpi-card">
+            <div class="crm-kpi-label">Fechado Balcão / CRM (Mês)</div>
+            <div id="kpi-fechado-crm" class="crm-kpi-value">R$ 0,00</div>
+            <div id="kpi-fechado-crm-sub" class="crm-kpi-sub">0 vendas registradas</div>
+          </div>
+          <div class="crm-kpi-card">
+            <div class="crm-kpi-label">Entregas Romaneio (Mês)</div>
+            <div id="kpi-romaneio-mes" class="crm-kpi-value">R$ 0,00</div>
+            <div id="kpi-romaneio-mes-sub" class="crm-kpi-sub">0 entregas na expedição</div>
+          </div>
+          <div class="crm-kpi-card">
+            <div class="crm-kpi-label">Ticket Médio Geral</div>
+            <div id="kpi-ticket-medio" class="crm-kpi-value">R$ 0,00</div>
+            <div id="kpi-ticket-medio-sub" class="crm-kpi-sub">Média por pedido fechado</div>
+          </div>
+          <div class="crm-kpi-card">
+            <div class="crm-kpi-label">Orçamentos em Aberto</div>
+            <div id="kpi-aberto-crm" class="crm-kpi-value">R$ 0,00</div>
+            <div id="kpi-aberto-crm-sub" class="crm-kpi-sub">0 propostas aguardando retorno</div>
+          </div>
+          <div class="crm-kpi-card">
+            <div class="crm-kpi-label">Clientes Curva A / Inativos</div>
+            <div id="kpi-inativos-crm" class="crm-kpi-value">0 / 0</div>
+            <div id="kpi-curva-a-sub" class="crm-kpi-sub">Top 80% faturamento vs. +45d</div>
+          </div>
+        </div>
+
+        <div class="crm-bi-grid">
+          <!-- RANKING TOP 10 CLIENTES (CURVA ABC + TICKET MÉDIO + FREQUÊNCIA) -->
+          <div class="crm-panel-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
+              <h3 style="margin:0;font-size:1rem;">👑 Ranking Top 10 Clientes (Romaneio + Balcão)</h3>
+              <button type="button" class="crm-btn-soft" style="padding:5px 11px;min-height:28px;font-size:0.76rem;" onclick="ativarViewCRM('contatos')">Ver Curva ABC Completa →</button>
+            </div>
+            <div class="table-wrapper">
+              <table class="crm-table" style="min-width:560px;">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Cliente</th>
+                    <th>Curva</th>
+                    <th class="num">Compras</th>
+                    <th class="num">Ticket Médio</th>
+                    <th>Frequência</th>
+                    <th class="num">Total (R$)</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-ranking-clientes"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- DESEMPENHO POR VENDEDOR -->
+          <div class="crm-panel-card">
+            <h3 style="margin:0 0 10px 0;font-size:1rem;">🏆 Desempenho por Vendedor</h3>
+            <div class="table-wrapper">
+              <table class="crm-table" style="min-width:440px;">
+                <thead>
+                  <tr>
+                    <th>Vendedor</th>
+                    <th class="num">Abertos</th>
+                    <th class="num">Fechados</th>
+                    <th class="num">Total (R$)</th>
+                    <th class="num">Conv.</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-ranking-vendedores"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: NEGÓCIOS (KANBAN & PIPELINE) -->
+      <section id="crm-view-negocios" class="crm-view-section" style="display:none;">
+        <div class="kanban-board" id="kanban-board">
+          <div class="kanban-col" data-stage="QUALIFICACAO" ondragover="permitirDropKanban(event)" ondragleave="sairDropKanban(event)" ondrop="soltarCardKanban(event, 'QUALIFICACAO')">
+            <div class="kanban-col-header">
+              <span class="kanban-col-title"><span class="dot dot-qual"></span> Qualificação</span>
+              <span id="kcol-sum-QUALIFICACAO" class="kanban-col-sum">0 • R$ 0</span>
+            </div>
+            <div class="kanban-cards" id="kcards-QUALIFICACAO"></div>
+          </div>
+
+          <div class="kanban-col" data-stage="PROPOSTA" ondragover="permitirDropKanban(event)" ondragleave="sairDropKanban(event)" ondrop="soltarCardKanban(event, 'PROPOSTA')">
+            <div class="kanban-col-header">
+              <span class="kanban-col-title"><span class="dot dot-prop"></span> Proposta enviada</span>
+              <span id="kcol-sum-PROPOSTA" class="kanban-col-sum">0 • R$ 0</span>
+            </div>
+            <div class="kanban-cards" id="kcards-PROPOSTA"></div>
+          </div>
+
+          <div class="kanban-col" data-stage="NEGOCIACAO" ondragover="permitirDropKanban(event)" ondragleave="sairDropKanban(event)" ondrop="soltarCardKanban(event, 'NEGOCIACAO')">
+            <div class="kanban-col-header">
+              <span class="kanban-col-title"><span class="dot dot-neg"></span> Negociação</span>
+              <span id="kcol-sum-NEGOCIACAO" class="kanban-col-sum">0 • R$ 0</span>
+            </div>
+            <div class="kanban-cards" id="kcards-NEGOCIACAO"></div>
+          </div>
+
+          <div class="kanban-col" data-stage="FECHAMENTO" ondragover="permitirDropKanban(event)" ondragleave="sairDropKanban(event)" ondrop="soltarCardKanban(event, 'FECHAMENTO')">
+            <div class="kanban-col-header">
+              <span class="kanban-col-title"><span class="dot dot-fech"></span> Fechamento</span>
+              <span id="kcol-sum-FECHAMENTO" class="kanban-col-sum">0 • R$ 0</span>
+            </div>
+            <div class="kanban-cards" id="kcards-FECHAMENTO"></div>
+          </div>
+
+          <div class="kanban-col" data-stage="PERDIDO" ondragover="permitirDropKanban(event)" ondragleave="sairDropKanban(event)" ondrop="soltarCardKanban(event, 'PERDIDO')">
+            <div class="kanban-col-header">
+              <span class="kanban-col-title"><span class="dot dot-perd"></span> Perdidos</span>
+              <span id="kcol-sum-PERDIDO" class="kanban-col-sum">0 • R$ 0</span>
+            </div>
+            <div class="kanban-cards" id="kcards-PERDIDO"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: CONTATOS, CURVA ABC, TICKET MÉDIO & FREQUÊNCIA -->
+      <section id="crm-view-contatos" class="crm-view-section" style="display:none;">
+        <div class="crm-panel-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;" id="crm-contatos-filtros">
+              <button type="button" class="crm-btn-soft active-filter" data-cfilter="COMPRADORES" onclick="filtrarStatusContatos('COMPRADORES', this)">Ranking Compradores</button>
+              <button type="button" class="crm-btn-soft" data-cfilter="CURVA_A" onclick="filtrarStatusContatos('CURVA_A', this)">⭐ Só Curva A (Top 80%)</button>
+              <button type="button" class="crm-btn-soft" data-cfilter="INATIVOS" onclick="filtrarStatusContatos('INATIVOS', this)">⚠️ Inativos (+45 dias)</button>
+              <button type="button" class="crm-btn-soft" data-cfilter="TODOS" onclick="filtrarStatusContatos('TODOS', this)">Base Completa (5.139+)</button>
+            </div>
+            <span id="crm-contatos-info" style="font-size:0.82rem;color:#78716c;font-weight:700;"></span>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="crm-table" style="min-width:960px;">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Cód.</th>
+                  <th>Cliente</th>
+                  <th>Curva</th>
+                  <th class="num">Pedidos</th>
+                  <th class="num">Ticket Médio</th>
+                  <th>Frequência</th>
+                  <th class="num">Total Comprado</th>
+                  <th>Recência</th>
+                  <th>Ação WhatsApp Desktop</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-crm-contatos"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: PROPOSTAS ABERTAS (FOLLOW-UP) -->
+      <section id="crm-view-propostas" class="crm-view-section" style="display:none;">
+        <div class="crm-panel-card">
+          <h3 style="margin:0 0 12px 0;font-size:1rem;">📄 Orçamentos e Propostas em Aberto (Follow-up)</h3>
+          <div class="table-wrapper">
+            <table class="crm-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Vendedor</th>
+                  <th>Cliente</th>
+                  <th>Categoria</th>
+                  <th>Etapa</th>
+                  <th class="num">Valor (R$)</th>
+                  <th>Observação</th>
+                  <th>Ações Rápidas</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-crm-propostas"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL 1: ESCOLHER VENDEDOR DO COMPUTADOR (SEM SENHA) -->
+  <div id="modal-vendedor" class="crm-modal-backdrop">
+    <div class="crm-modal">
+      <h3>Quem está atendendo neste computador?</h3>
+      <p style="font-size:0.85rem;color:#57534e;margin:0;">A escolha fica salva neste PC e identifica seus orçamentos e vendas automaticamente.</p>
+      <div class="seller-choice-grid">
+        <button type="button" class="seller-choice-btn" onclick="selecionarVendedorAtivo('Ewerton')"><span>EW</span> Ewerton</button>
+        <button type="button" class="seller-choice-btn" onclick="selecionarVendedorAtivo('Alexandre')"><span>AL</span> Alexandre</button>
+        <button type="button" class="seller-choice-btn" onclick="selecionarVendedorAtivo('Paulo')"><span>PA</span> Paulo</button>
+        <button type="button" class="seller-choice-btn" onclick="selecionarVendedorAtivo('Yan')"><span>YN</span> Yan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: NOVO NEGÓCIO / ORÇAMENTO -->
+  <div id="modal-novo-negocio" class="crm-modal-backdrop">
+    <div class="crm-modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3>Novo Negócio / Orçamento</h3>
+        <button type="button" class="crm-btn-soft" onclick="fecharModalNovoNegocio()">✕</button>
+      </div>
+      <form id="form-novo-negocio" style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="field">
+            <label>Vendedor</label>
+            <select id="nn-vendedor">
+              <option value="Ewerton">Ewerton</option>
+              <option value="Alexandre">Alexandre</option>
+              <option value="Paulo">Paulo</option>
+              <option value="Yan">Yan</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Código do Cliente</label>
+            <input type="text" id="nn-codigo" inputmode="numeric" placeholder="Ex.: 101132" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Nome do Cliente *</label>
+          <input type="text" id="nn-cliente" list="lista-clientes" placeholder="Digite o nome ou busque pelo código" required />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="field">
+            <label>WhatsApp (com DDD)</label>
+            <input type="text" id="nn-telefone" placeholder="Ex.: 83999999999" />
+          </div>
+          <div class="field">
+            <label>Categoria</label>
+            <select id="nn-categoria">
+              <option value="AÇO / PERFIS">AÇO / PERFIS</option>
+              <option value="TELHA">TELHA</option>
+              <option value="FORRO PVC">FORRO PVC</option>
+              <option value="ALUMÍNIO">ALUMÍNIO</option>
+              <option value="FERRAGENS">FERRAGENS</option>
+              <option value="POSTE ENERGISA">POSTE ENERGISA</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="field">
+            <label>Valor Estimado (R$) *</label>
+            <input type="text" id="nn-valor" inputmode="numeric" placeholder="R$ 0,00" required />
+          </div>
+          <div class="field">
+            <label>Etapa Inicial</label>
+            <select id="nn-etapa">
+              <option value="QUALIFICACAO">🟡 Qualificação</option>
+              <option value="PROPOSTA" selected>🟠 Proposta enviada</option>
+              <option value="NEGOCIACAO">🟢 Negociação</option>
+              <option value="FECHAMENTO">🔵 Fechamento</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Tipo de Saída (se fechar)</label>
+          <select id="nn-saida">
+            <option value="RETIRA BALCÃO">🛍️ Retira na Loja / Balcão</option>
+            <option value="ENTREGA LOJA">🚚 Entrega Loja (Enviar p/ Romaneio)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Observação / Materiais cotados</label>
+          <input type="text" id="nn-obs" placeholder="Ex.: 20 barras metalon 30x20 + 10 telhas" />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
+          <button type="button" class="crm-btn-soft" onclick="fecharModalNovoNegocio()">Cancelar</button>
+          <button type="submit" class="crm-btn-dark">Salvar no CRM</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     // ================= CONFIGURAÇÃO SUPABASE =================
     const SUPABASE_REST_URL = 'https://iqfcyxuhqnluucifylqn.supabase.co/rest/v1';
     const SUPABASE_API_KEY = 'sb_publishable_PSTBZr3SnTxlmCqxFth3Pw_3LLr38Gb';
     const SUPABASE_TABLE = 'romaneios';
     const SUPABASE_CLIENTES_TABLE = 'clientes_acoforte';
+    const SUPABASE_CRM_TABLE = 'vendas_crm';
+    const SUPABASE_CONTATOS_CRM_TABLE = 'historico_contatos_crm';
 
     // ================= CONFIGURAÇÃO CACHE LOCAL (INDEXEDDB) =================
     const DB_NAME = 'RomaneioEntregasDB';
@@ -683,15 +1507,23 @@
     const STORE_NAME = 'entregas';
     const LEGACY_STORAGE_KEY = 'romaneio_entregas_v1';
     const CACHE_CLIENTES_KEY = 'acoforte_clientes_map_v1';
+    const CACHE_CRM_KEY = 'acoforte_vendas_crm_v1';
+    const CACHE_VENDEDOR_KEY = 'acoforte_vendedor_ativo_v1';
     const META_LAST_BACKUP = 'romaneio_last_backup_ts';
     const META_CHANGES_COUNT = 'romaneio_changes_since_backup';
     const META_DARK_MODE = 'romaneio_dark_mode';
 
     let db = null;
     let itensCache = [];
-    let mapaClientes = {}; // { "101132": { codigo: "101132", nome: "...", telefone: "...", bairro: "...", endereco: "..." } }
+    let mapaClientes = {};
+    let vendasCrmCache = [];
     let inlineEditId = null;
     let ultimoEstadoUndo = null;
+    let vendedorAtivo = localStorage.getItem(CACHE_VENDEDOR_KEY) || '';
+    let categoriaBalcaoSelecionada = 'AÇO / PERFIS';
+    let filtroStatusContatosAtual = 'COMPRADORES';
+    let crmViewAtual = 'visao-geral';
+    let dragCardId = null;
 
     function obterDataHojeLocal() {
       const agora = new Date();
@@ -862,9 +1694,9 @@
       return String(Math.max(...codigosNumericos) + 1);
     }
 
-    async function salvarNovoClienteNoBanco(codigoInformado, nomeCliente) {
+    async function salvarNovoClienteNoBanco(codigoInformado, nomeCliente, telefoneInformado = '') {
       const nomeLimpo = String(nomeCliente || '').trim().toUpperCase();
-      if (!nomeLimpo) return null;
+      if (!nomeLimpo || nomeLimpo === 'BALCÃO AVULSO') return null;
 
       let codLimpo = String(codigoInformado || '').trim().replace(/\D/g, '');
 
@@ -883,7 +1715,7 @@
       const novoRegistro = {
         codigo: codLimpo,
         nome: nomeLimpo,
-        telefone: '',
+        telefone: String(telefoneInformado || '').trim(),
         bairro: '',
         endereco: ''
       };
@@ -898,7 +1730,8 @@
           headers: headersSupabase({ 'Prefer': 'resolution=ignore-duplicates,return=minimal' }),
           body: JSON.stringify([{
             codigo: Number(codLimpo),
-            nome: nomeLimpo
+            nome: nomeLimpo,
+            telefone: novoRegistro.telefone || null
           }])
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -980,6 +1813,12 @@
 
     function formatarMoeda(valor) {
       return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function formatarMoedaCurta(valor) {
+      const v = Number(valor || 0);
+      if (v >= 1000) return `R$ ${(v / 1000).toFixed(1).replace('.', ',')} mil`;
+      return `R$ ${v.toFixed(0)}`;
     }
 
     function aplicarMascaraMoedaInput(inputEl) {
@@ -1214,10 +2053,12 @@
         atualizarStatusNuvem('offline', '⚠️ Offline (usando cache local)');
       }
       await sincronizarBaseClientesNuvem();
+      await sincronizarDadosCRM();
     }
 
     async function inicializarDados() {
       carregarBaseClientesLocal();
+      carregarCacheCrmLocal();
       await abrirBanco();
       let dadosLocais = await lerTodosIndexedDB();
 
@@ -1396,7 +2237,7 @@
       window.print();
     });
 
-    // ================= CADASTRO =================
+    // ================= CADASTRO ROMANEIO =================
     document.getElementById('form-romaneio').addEventListener('submit', async e => {
       e.preventDefault();
 
@@ -1437,7 +2278,6 @@
         if (!confirmar) return;
       }
 
-      // Verifica se é cliente novo e já cadastra na tabela clientes_acoforte
       const jaExisteNome = Object.values(mapaClientes).some(c => c.nome === clienteValor);
       const jaExisteCod = codigoDigitado && Boolean(mapaClientes[codigoDigitado]);
 
@@ -1474,7 +2314,6 @@
       await persistirAlteracoes(novaLista, true);
     });
 
-    // ================= ATUALIZAÇÃO DE STATUS DE ENTREGA =================
     async function atualizarStatusEntrega(id, novoStatus) {
       const statusNorm = normalizarStatusEntrega(novoStatus);
       const precisaObs = statusExigeObservacao(statusNorm);
@@ -1513,7 +2352,6 @@
       await persistirAlteracoes(novaLista, true);
     }
 
-    // ================= EDIÇÃO INLINE =================
     function iniciarEdicaoInline(id) {
       inlineEditId = id;
       renderizar();
@@ -1755,6 +2593,16 @@
     });
 
     document.addEventListener('keydown', e => {
+      const emModoCrm = document.body.classList.contains('crm-mode');
+
+      if (emModoCrm) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          document.getElementById('crm-global-search').focus();
+        }
+        return;
+      }
+
       const tag = document.activeElement?.tagName;
       const emInput = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
 
@@ -2027,6 +2875,723 @@
       const somaExcel = itensExcel.reduce((acc, i) => acc + Number(i.valor || 0), 0);
       document.getElementById('qtd-excel').textContent = `Registros na prévia: ${itensExcel.length}`;
       document.getElementById('total-excel').textContent = `Total: ${formatarMoeda(somaExcel)}`;
+
+      if (document.body.classList.contains('crm-mode')) {
+        renderizarCRM();
+      }
+    }
+
+    // ================= LÓGICA DO CRM COMERCIAL AÇO FORTE =================
+    function carregarCacheCrmLocal() {
+      try {
+        const raw = localStorage.getItem(CACHE_CRM_KEY);
+        if (raw) vendasCrmCache = JSON.parse(raw) || [];
+      } catch {
+        vendasCrmCache = [];
+      }
+    }
+
+    function salvarCacheCrmLocal() {
+      try {
+        localStorage.setItem(CACHE_CRM_KEY, JSON.stringify(vendasCrmCache));
+      } catch { /* ignora */ }
+    }
+
+    async function sincronizarDadosCRM() {
+      const dot = document.getElementById('crm-sync-dot');
+      try {
+        const resp = await fetch(`${SUPABASE_REST_URL}/${SUPABASE_CRM_TABLE}?select=*&order=id.desc`, {
+          method: 'GET',
+          headers: headersSupabase()
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const rows = await resp.json();
+        vendasCrmCache = Array.isArray(rows) ? rows : [];
+        salvarCacheCrmLocal();
+        if (dot) { dot.textContent = '● Online'; dot.style.color = '#15803d'; }
+        if (document.body.classList.contains('crm-mode')) renderizarCRM();
+      } catch (err) {
+        console.warn('CRM operando em cache local:', err);
+        if (dot) { dot.textContent = '● Local'; dot.style.color = '#d97706'; }
+      }
+    }
+
+    async function salvarRegistroCrmNoBanco(registro) {
+      vendasCrmCache = [registro, ...vendasCrmCache.filter(r => r.id !== registro.id)];
+      salvarCacheCrmLocal();
+      renderizarCRM();
+
+      try {
+        const resp = await fetch(`${SUPABASE_REST_URL}/${SUPABASE_CRM_TABLE}?on_conflict=id`, {
+          method: 'POST',
+          headers: headersSupabase({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+          body: JSON.stringify([registro])
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      } catch (err) {
+        console.warn('Erro ao gravar em vendas_crm:', err);
+      }
+    }
+
+    async function excluirRegistroCrm(id) {
+      if (!confirm('Remover este registro do CRM?')) return;
+      vendasCrmCache = vendasCrmCache.filter(r => r.id !== id);
+      salvarCacheCrmLocal();
+      renderizarCRM();
+
+      try {
+        await fetch(`${SUPABASE_REST_URL}/${SUPABASE_CRM_TABLE}?id=eq.${id}`, {
+          method: 'DELETE',
+          headers: headersSupabase()
+        });
+      } catch { /* ignora */ }
+    }
+
+    async function enviarVendaCrmParaRomaneio(registro) {
+      if (registro.romaneio_id) return registro.romaneio_id;
+      const novoRomaneioId = Date.now() + Math.floor(Math.random() * 999);
+      const novoPedidoRomaneio = {
+        id: novoRomaneioId,
+        data: registro.data || obterDataHojeLocal(),
+        turno: obterTurnoAtualSugerido(),
+        motorista: 'A DEFINIR',
+        pedido: `CRM-${String(novoRomaneioId).slice(-5)}`,
+        cliente: String(registro.cliente || '').toUpperCase(),
+        valor: Number(registro.valor || 0),
+        observacao: `[CRM ${registro.vendedor.toUpperCase()}] ${(registro.categoria || '')} ${(registro.observacao || '')}`.trim().toUpperCase(),
+        statusEntrega: 'PENDENTE',
+        motivoNaoEntrega: ''
+      };
+
+      const novaListaRomaneio = [...itensCache, novoPedidoRomaneio];
+      await persistirAlteracoes(novaListaRomaneio, false);
+      return novoRomaneioId;
+    }
+
+    // Alternar entre Romaneio e CRM
+    document.getElementById('btn-abrir-crm').addEventListener('click', () => {
+      document.body.classList.add('crm-mode');
+      atualizarVisualVendedor();
+      if (!vendedorAtivo) {
+        abrirModalVendedor();
+      }
+      renderizarCRM();
+    });
+
+    document.getElementById('btn-voltar-romaneio').addEventListener('click', () => {
+      document.body.classList.remove('crm-mode');
+      renderizar();
+    });
+
+    function abrirModalVendedor() {
+      document.getElementById('modal-vendedor').classList.add('open');
+    }
+
+    function selecionarVendedorAtivo(nome) {
+      vendedorAtivo = nome;
+      localStorage.setItem(CACHE_VENDEDOR_KEY, nome);
+      document.getElementById('modal-vendedor').classList.remove('open');
+      atualizarVisualVendedor();
+      renderizarCRM();
+    }
+
+    function atualizarVisualVendedor() {
+      const nome = vendedorAtivo || 'Ewerton';
+      const iniciais = { Ewerton: 'EW', Alexandre: 'AL', Paulo: 'PA', Yan: 'YN' }[nome] || nome.slice(0, 2).toUpperCase();
+      document.getElementById('crm-seller-name').textContent = nome;
+      document.getElementById('crm-seller-avatar').textContent = iniciais;
+    }
+
+    function ativarViewCRM(viewName) {
+      crmViewAtual = viewName;
+      document.querySelectorAll('.crm-nav-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.crmView === viewName);
+      });
+      document.querySelectorAll('.crm-view-section').forEach(sec => {
+        sec.style.display = sec.id === `crm-view-${viewName}` ? 'block' : 'none';
+      });
+
+      const titulos = {
+        'visao-geral': ['Visão Geral Comercial', 'Indicadores de balcão, curva ABC, ticket médio, frequência e entregas integradas'],
+        'negocios': ['Pipeline & Quadro Kanban', 'Arraste os cards entre as etapas ou feche pedidos direto para o romaneio'],
+        'contatos': ['Carteira de Clientes & Curva ABC', 'Ranking consolidado (Romaneio + Balcão) com Ticket Médio, Frequência e Reativação'],
+        'propostas': ['Propostas & Orçamentos Abertos', 'Cotações aguardando retorno no WhatsApp Desktop']
+      };
+      const [t, sub] = titulos[viewName] || titulos['visao-geral'];
+      document.getElementById('crm-view-title').textContent = t;
+      document.getElementById('crm-view-subtitle').textContent = sub;
+      renderizarCRM();
+    }
+
+    document.querySelectorAll('.crm-nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => ativarViewCRM(btn.dataset.crmView));
+    });
+
+    document.querySelectorAll('.crm-sub-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ativarViewCRM('negocios');
+      });
+    });
+
+    document.getElementById('crm-filtro-vendedor').addEventListener('change', renderizarCRM);
+    document.getElementById('crm-global-search').addEventListener('input', () => {
+      const termo = document.getElementById('crm-global-search').value.trim();
+      if (termo && crmViewAtual === 'visao-geral') {
+        ativarViewCRM('contatos');
+      } else {
+        renderizarCRM();
+      }
+    });
+
+    // Balcão Express
+    document.querySelectorAll('#balcao-cat-pills .cat-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('#balcao-cat-pills .cat-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        categoriaBalcaoSelecionada = pill.dataset.cat;
+      });
+    });
+
+    const bxValor = document.getElementById('bx-valor');
+    const nnValor = document.getElementById('nn-valor');
+    bxValor.addEventListener('input', () => aplicarMascaraMoedaInput(bxValor));
+    nnValor.addEventListener('input', () => aplicarMascaraMoedaInput(nnValor));
+
+    document.getElementById('bx-codigo').addEventListener('input', e => {
+      const cod = e.target.value.trim();
+      const cli = mapaClientes[cod];
+      if (cli) {
+        document.getElementById('bx-cliente').value = cli.nome;
+        if (cli.telefone) document.getElementById('bx-telefone').value = cli.telefone;
+      }
+    });
+
+    document.getElementById('form-balcao-express').addEventListener('submit', async e => {
+      e.preventDefault();
+      const cod = document.getElementById('bx-codigo').value.trim();
+      const cliente = document.getElementById('bx-cliente').value.trim().toUpperCase();
+      const telefone = document.getElementById('bx-telefone').value.trim();
+      const valor = extrairValorMonetario(bxValor.value);
+      const tipoSaida = document.getElementById('bx-saida').value;
+
+      if (!cliente || valor <= 0) return;
+
+      const vendedor = vendedorAtivo || 'Ewerton';
+      await salvarNovoClienteNoBanco(cod, cliente, telefone);
+
+      const novoRegistro = {
+        id: Date.now(),
+        data: obterDataHojeLocal(),
+        vendedor,
+        codigo_cliente: cod,
+        cliente,
+        telefone,
+        categoria: categoriaBalcaoSelecionada,
+        etapa_kanban: 'FECHAMENTO',
+        tipo_saida: tipoSaida,
+        motivo_perda: '',
+        valor,
+        observacao: 'LANÇAMENTO BALCÃO EXPRESS',
+        romaneio_id: null
+      };
+
+      if (tipoSaida === 'ENTREGA LOJA') {
+        novoRegistro.romaneio_id = await enviarVendaCrmParaRomaneio(novoRegistro);
+      }
+
+      await salvarRegistroCrmNoBanco(novoRegistro);
+
+      document.getElementById('bx-codigo').value = '';
+      document.getElementById('bx-cliente').value = '';
+      document.getElementById('bx-telefone').value = '';
+      bxValor.value = '';
+      document.getElementById('bx-codigo').focus();
+    });
+
+    // Modal Novo Negócio
+    function abrirModalNovoNegocio(clientePre = '', codigoPre = '', telefonePre = '') {
+      document.getElementById('nn-vendedor').value = vendedorAtivo || 'Ewerton';
+      document.getElementById('nn-codigo').value = codigoPre;
+      document.getElementById('nn-cliente').value = clientePre;
+      document.getElementById('nn-telefone').value = telefonePre;
+      nnValor.value = '';
+      document.getElementById('nn-obs').value = '';
+      document.getElementById('modal-novo-negocio').classList.add('open');
+      setTimeout(() => document.getElementById('nn-cliente').focus(), 50);
+    }
+
+    function fecharModalNovoNegocio() {
+      document.getElementById('modal-novo-negocio').classList.remove('open');
+    }
+
+    document.getElementById('nn-codigo').addEventListener('input', e => {
+      const cod = e.target.value.trim();
+      const cli = mapaClientes[cod];
+      if (cli) {
+        document.getElementById('nn-cliente').value = cli.nome;
+        if (cli.telefone) document.getElementById('nn-telefone').value = cli.telefone;
+      }
+    });
+
+    document.getElementById('form-novo-negocio').addEventListener('submit', async e => {
+      e.preventDefault();
+      const vendedor = document.getElementById('nn-vendedor').value;
+      const cod = document.getElementById('nn-codigo').value.trim();
+      const cliente = document.getElementById('nn-cliente').value.trim().toUpperCase();
+      const telefone = document.getElementById('nn-telefone').value.trim();
+      const categoria = document.getElementById('nn-categoria').value;
+      const valor = extrairValorMonetario(nnValor.value);
+      const etapa = document.getElementById('nn-etapa').value;
+      const tipoSaida = document.getElementById('nn-saida').value;
+      const obs = document.getElementById('nn-obs').value.trim().toUpperCase();
+
+      if (!cliente || valor <= 0) return;
+
+      await salvarNovoClienteNoBanco(cod, cliente, telefone);
+
+      const registro = {
+        id: Date.now(),
+        data: obterDataHojeLocal(),
+        vendedor,
+        codigo_cliente: cod,
+        cliente,
+        telefone,
+        categoria,
+        etapa_kanban: etapa,
+        tipo_saida: tipoSaida,
+        motivo_perda: '',
+        valor,
+        observacao: obs,
+        romaneio_id: null
+      };
+
+      if (etapa === 'FECHAMENTO' && tipoSaida === 'ENTREGA LOJA') {
+        registro.romaneio_id = await enviarVendaCrmParaRomaneio(registro);
+      }
+
+      await salvarRegistroCrmNoBanco(registro);
+      fecharModalNovoNegocio();
+      ativarViewCRM('negocios');
+    });
+
+    // Kanban Drag & Drop
+    function iniciarDragCard(event, id) {
+      dragCardId = id;
+      event.dataTransfer.effectAllowed = 'move';
+    }
+
+    function permitirDropKanban(event) {
+      event.preventDefault();
+      event.currentTarget.classList.add('drag-over');
+    }
+
+    function sairDropKanban(event) {
+      event.currentTarget.classList.remove('drag-over');
+    }
+
+    async function soltarCardKanban(event, novaEtapa) {
+      event.preventDefault();
+      event.currentTarget.classList.remove('drag-over');
+      if (!dragCardId) return;
+      await moverEtapaKanban(dragCardId, novaEtapa);
+      dragCardId = null;
+    }
+
+    async function moverEtapaKanban(id, novaEtapa) {
+      const item = vendasCrmCache.find(r => r.id === id);
+      if (!item || item.etapa_kanban === novaEtapa) return;
+
+      const atualizado = { ...item, etapa_kanban: novaEtapa };
+
+      if (novaEtapa === 'PERDIDO') {
+        const motivo = prompt('Motivo da perda (Ex.: Preço, Prazo, Estoque, Concorrência):', 'PREÇO');
+        if (motivo === null) return;
+        atualizado.motivo_perda = motivo.trim().toUpperCase();
+      }
+
+      if (novaEtapa === 'FECHAMENTO' && !atualizado.romaneio_id) {
+        const enviarEntrega = confirm(`Negócio de "${atualizado.cliente}" fechado!\n\nClique em OK para enviar como ENTREGA LOJA no Romaneio, ou CANCELAR para registrar como RETIRA NO BALCÃO.`);
+        if (enviarEntrega) {
+          atualizado.tipo_saida = 'ENTREGA LOJA';
+          atualizado.romaneio_id = await enviarVendaCrmParaRomaneio(atualizado);
+        } else {
+          atualizado.tipo_saida = 'RETIRA BALCÃO';
+        }
+      }
+
+      await salvarRegistroCrmNoBanco(atualizado);
+    }
+
+    // WhatsApp Desktop (protocolo nativo whatsapp://send)
+    async function abrirWhatsAppDesktop(telefone, nomeCliente, mensagem, tipoAbordagem = 'ATENDIMENTO') {
+      let telLimpo = String(telefone || '').replace(/\D/g, '');
+      if (!telLimpo) {
+        const digitado = prompt(`Digite o WhatsApp de ${nomeCliente} com DDD (ex.: 83999999999):`);
+        if (!digitado) return;
+        telLimpo = digitado.replace(/\D/g, '');
+      }
+      if (telLimpo.length <= 11 && !telLimpo.startsWith('55')) {
+        telLimpo = '55' + telLimpo;
+      }
+
+      const textoCodificado = encodeURIComponent(mensagem);
+      window.location.href = `whatsapp://send?phone=${telLimpo}&text=${textoCodificado}`;
+
+      try {
+        await fetch(`${SUPABASE_REST_URL}/${SUPABASE_CONTATOS_CRM_TABLE}`, {
+          method: 'POST',
+          headers: headersSupabase({ 'Prefer': 'return=minimal' }),
+          body: JSON.stringify([{
+            id: Date.now(),
+            vendedor: vendedorAtivo || 'Ewerton',
+            cliente: String(nomeCliente || '').toUpperCase(),
+            tipo_abordagem: tipoAbordagem,
+            resumo: mensagem.slice(0, 180)
+          }])
+        });
+      } catch { /* ignora se offline */ }
+    }
+
+    function filtrarStatusContatos(status, btnEl) {
+      filtroStatusContatosAtual = status;
+      if (btnEl) {
+        document.querySelectorAll('#crm-contatos-filtros .crm-btn-soft').forEach(b => b.classList.remove('active-filter'));
+        btnEl.classList.add('active-filter');
+      }
+      renderizarCRM();
+    }
+
+    // ================= CÁLCULO DE RANKING, CURVA ABC, TICKET MÉDIO E FREQUÊNCIA =================
+    function calcularBaseConsolidadaClientes() {
+      const mapaConsolidado = {};
+
+      Object.values(mapaClientes).forEach(c => {
+        mapaConsolidado[c.nome] = {
+          codigo: c.codigo,
+          nome: c.nome,
+          telefone: c.telefone || '',
+          datasCompras: [],
+          ultimaCompra: '',
+          primeiraCompra: '',
+          totalComprado: 0,
+          qtdCompras: 0
+        };
+      });
+
+      // 1. Soma entregas do Romaneio
+      itensCache.forEach(r => {
+        const nome = (r.cliente || '').toUpperCase().trim();
+        if (!nome || nome === 'BALCÃO AVULSO') return;
+        if (!mapaConsolidado[nome]) {
+          mapaConsolidado[nome] = { codigo: '-', nome, telefone: '', datasCompras: [], ultimaCompra: '', primeiraCompra: '', totalComprado: 0, qtdCompras: 0 };
+        }
+        mapaConsolidado[nome].totalComprado += Number(r.valor || 0);
+        mapaConsolidado[nome].qtdCompras += 1;
+        if (r.data) {
+          mapaConsolidado[nome].datasCompras.push(r.data);
+          if (!mapaConsolidado[nome].ultimaCompra || r.data > mapaConsolidado[nome].ultimaCompra) {
+            mapaConsolidado[nome].ultimaCompra = r.data;
+          }
+          if (!mapaConsolidado[nome].primeiraCompra || r.data < mapaConsolidado[nome].primeiraCompra) {
+            mapaConsolidado[nome].primeiraCompra = r.data;
+          }
+        }
+      });
+
+      // 2. Soma vendas fechadas no CRM (evita somar duas vezes se já foi enviado para o romaneio)
+      vendasCrmCache.filter(v => v.etapa_kanban === 'FECHAMENTO' && !v.romaneio_id).forEach(v => {
+        const nome = (v.cliente || '').toUpperCase().trim();
+        if (!nome || nome === 'BALCÃO AVULSO') return;
+        if (!mapaConsolidado[nome]) {
+          mapaConsolidado[nome] = { codigo: v.codigo_cliente || '-', nome, telefone: v.telefone || '', datasCompras: [], ultimaCompra: '', primeiraCompra: '', totalComprado: 0, qtdCompras: 0 };
+        }
+        if (v.telefone && !mapaConsolidado[nome].telefone) {
+          mapaConsolidado[nome].telefone = v.telefone;
+        }
+        mapaConsolidado[nome].totalComprado += Number(v.valor || 0);
+        mapaConsolidado[nome].qtdCompras += 1;
+        if (v.data) {
+          mapaConsolidado[nome].datasCompras.push(v.data);
+          if (!mapaConsolidado[nome].ultimaCompra || v.data > mapaConsolidado[nome].ultimaCompra) {
+            mapaConsolidado[nome].ultimaCompra = v.data;
+          }
+          if (!mapaConsolidado[nome].primeiraCompra || v.data < mapaConsolidado[nome].primeiraCompra) {
+            mapaConsolidado[nome].primeiraCompra = v.data;
+          }
+        }
+      });
+
+      // Ordena por faturamento decrescente para calcular Ranking e Curva ABC
+      const listaOrdenada = Object.values(mapaConsolidado).sort((a, b) => b.totalComprado - a.totalComprado);
+      const faturamentoTotalGeral = listaOrdenada.reduce((acc, c) => acc + c.totalComprado, 0);
+      const hojeMs = new Date(obterDataHojeLocal() + 'T12:00:00').getTime();
+
+      let acumulado = 0;
+      let rankPosicao = 0;
+
+      return listaOrdenada.map(c => {
+        const ticketMedio = c.qtdCompras > 0 ? (c.totalComprado / c.qtdCompras) : 0;
+
+        // Recência (dias desde a última compra)
+        let diasSemComprar = null;
+        if (c.ultimaCompra) {
+          const dtMs = new Date(c.ultimaCompra + 'T12:00:00').getTime();
+          diasSemComprar = Math.max(0, Math.floor((hojeMs - dtMs) / (1000 * 60 * 60 * 24)));
+        }
+
+        // Frequência de Compra (ciclo médio em dias entre pedidos)
+        let frequenciaDias = null;
+        let textoFrequencia = 'Sem compra';
+        if (c.qtdCompras === 1) {
+          textoFrequencia = 'Compra única';
+        } else if (c.qtdCompras > 1 && c.primeiraCompra && c.ultimaCompra) {
+          const iniMs = new Date(c.primeiraCompra + 'T12:00:00').getTime();
+          const fimMs = new Date(c.ultimaCompra + 'T12:00:00').getTime();
+          const spanDias = Math.max(1, Math.round((fimMs - iniMs) / (1000 * 60 * 60 * 24)));
+          frequenciaDias = Math.max(1, Math.round(spanDias / (c.qtdCompras - 1)));
+          textoFrequencia = `A cada ${frequenciaDias}d`;
+        }
+
+        // Classificação Curva ABC (A = top 80%, B = próximos 15%, C = 5% restantes)
+        let curvaABC = '-';
+        if (c.totalComprado > 0 && faturamentoTotalGeral > 0) {
+          rankPosicao += 1;
+          const pctAntes = (acumulado / faturamentoTotalGeral) * 100;
+          acumulado += c.totalComprado;
+          if (pctAntes < 80) curvaABC = 'A';
+          else if (pctAntes < 95) curvaABC = 'B';
+          else curvaABC = 'C';
+        }
+
+        return {
+          ...c,
+          rank: rankPosicao > 0 ? rankPosicao : null,
+          ticketMedio,
+          diasSemComprar,
+          frequenciaDias,
+          textoFrequencia,
+          curvaABC
+        };
+      });
+    }
+
+    function renderizarCRM() {
+      const vendedorFiltro = document.getElementById('crm-filtro-vendedor').value;
+      const buscaGlobal = document.getElementById('crm-global-search').value.trim().toUpperCase();
+      const prefixoMes = obterDataHojeLocal().slice(0, 7);
+
+      const vendasFiltradas = vendasCrmCache.filter(v => {
+        if (vendedorFiltro !== 'TODOS' && (v.vendedor || 'Ewerton') !== vendedorFiltro) return false;
+        if (!buscaGlobal) return true;
+        return (
+          (v.cliente || '').toUpperCase().includes(buscaGlobal) ||
+          (v.categoria || '').toUpperCase().includes(buscaGlobal) ||
+          (v.observacao || '').toUpperCase().includes(buscaGlobal) ||
+          (v.codigo_cliente || '').includes(buscaGlobal)
+        );
+      });
+
+      const etapas = [
+        { key: 'QUALIFICACAO', el: 'sub-meta-qual' },
+        { key: 'PROPOSTA', el: 'sub-meta-prop' },
+        { key: 'NEGOCIACAO', el: 'sub-meta-neg' },
+        { key: 'FECHAMENTO', el: 'sub-meta-fech' },
+        { key: 'PERDIDO', el: 'sub-meta-perd' }
+      ];
+
+      etapas.forEach(et => {
+        const lista = vendasFiltradas.filter(v => v.etapa_kanban === et.key);
+        const soma = lista.reduce((acc, i) => acc + Number(i.valor || 0), 0);
+        const metaTxt = `${lista.length} • ${formatarMoedaCurta(soma)}`;
+        const subEl = document.getElementById(et.el);
+        if (subEl) subEl.textContent = metaTxt;
+        const colEl = document.getElementById(`kcol-sum-${et.key}`);
+        if (colEl) colEl.textContent = metaTxt;
+      });
+
+      const abertas = vendasFiltradas.filter(v => ['QUALIFICACAO', 'PROPOSTA', 'NEGOCIACAO'].includes(v.etapa_kanban));
+      document.getElementById('crm-count-propostas').textContent = `${abertas.length} abertas`;
+
+      const listaClientesConsolidada = calcularBaseConsolidadaClientes();
+      document.getElementById('crm-count-contatos').textContent = String(listaClientesConsolidada.length);
+
+      // KPIs Visão Geral
+      const fechadasMes = vendasFiltradas.filter(v => v.etapa_kanban === 'FECHAMENTO' && (v.data || '').startsWith(prefixoMes));
+      const somaFechadasMes = fechadasMes.reduce((acc, i) => acc + Number(i.valor || 0), 0);
+      document.getElementById('kpi-fechado-crm').textContent = formatarMoeda(somaFechadasMes);
+      document.getElementById('kpi-fechado-crm-sub').textContent = `${fechadasMes.length} venda(s) no mês atual`;
+
+      const entregasMes = itensCache.filter(r => (r.data || '').startsWith(prefixoMes));
+      const somaEntregasMes = entregasMes.reduce((acc, i) => acc + Number(i.valor || 0), 0);
+      document.getElementById('kpi-romaneio-mes').textContent = formatarMoeda(somaEntregasMes);
+      document.getElementById('kpi-romaneio-mes-sub').textContent = `${entregasMes.length} entrega(s) na expedição`;
+
+      // Ticket Médio Geral (Romaneio + Balcão)
+      const compradoresAtivos = listaClientesConsolidada.filter(c => c.qtdCompras > 0);
+      const totalPedidosGeral = compradoresAtivos.reduce((acc, c) => acc + c.qtdCompras, 0);
+      const somaGeral = compradoresAtivos.reduce((acc, c) => acc + c.totalComprado, 0);
+      const ticketMedioGeral = totalPedidosGeral > 0 ? (somaGeral / totalPedidosGeral) : 0;
+      document.getElementById('kpi-ticket-medio').textContent = formatarMoeda(ticketMedioGeral);
+      document.getElementById('kpi-ticket-medio-sub').textContent = `Baseado em ${totalPedidosGeral} pedido(s)`;
+
+      const somaAbertas = abertas.reduce((acc, i) => acc + Number(i.valor || 0), 0);
+      document.getElementById('kpi-aberto-crm').textContent = formatarMoeda(somaAbertas);
+      document.getElementById('kpi-aberto-crm-sub').textContent = `${abertas.length} proposta(s) em andamento`;
+
+      const qtdCurvaA = listaClientesConsolidada.filter(c => c.curvaABC === 'A').length;
+      const inativos = listaClientesConsolidada.filter(c => c.diasSemComprar !== null && c.diasSemComprar >= 45);
+      document.getElementById('kpi-inativos-crm').textContent = `${qtdCurvaA} / ${inativos.length}`;
+      document.getElementById('kpi-curva-a-sub').textContent = `${qtdCurvaA} Curva A • ${inativos.length} inativos (+45d)`;
+
+      // Ranking Top 10 Clientes na Visão Geral
+      const top10Clientes = compradoresAtivos.slice(0, 10);
+      document.getElementById('tbody-ranking-clientes').innerHTML = top10Clientes.length
+        ? top10Clientes.map(c => `
+            <tr>
+              <td><strong>#${c.rank}</strong></td>
+              <td><strong>${escaparHTML(c.nome)}</strong></td>
+              <td><span class="abc-badge abc-${c.curvaABC}">Classe ${c.curvaABC}</span></td>
+              <td class="num">${c.qtdCompras}</td>
+              <td class="num">${formatarMoeda(c.ticketMedio)}</td>
+              <td>${escaparHTML(c.textoFrequencia)}</td>
+              <td class="num"><strong>${formatarMoeda(c.totalComprado)}</strong></td>
+            </tr>
+          `).join('')
+        : `<tr><td colspan="7" style="text-align:center;color:#78716c;">Nenhuma venda registrada ainda.</td></tr>`;
+
+      // Ranking Vendedores
+      const vendedores = ['Ewerton', 'Alexandre', 'Paulo', 'Yan'];
+      document.getElementById('tbody-ranking-vendedores').innerHTML = vendedores.map(vend => {
+        const doVend = vendasCrmCache.filter(v => (v.vendedor || 'Ewerton') === vend);
+        const ab = doVend.filter(v => ['QUALIFICACAO', 'PROPOSTA', 'NEGOCIACAO'].includes(v.etapa_kanban));
+        const fc = doVend.filter(v => v.etapa_kanban === 'FECHAMENTO');
+        const somaFc = fc.reduce((acc, i) => acc + Number(i.valor || 0), 0);
+        const conv = doVend.length ? Math.round((fc.length / doVend.length) * 100) : 0;
+
+        return `
+          <tr>
+            <td><strong>${vend}</strong></td>
+            <td class="num">${ab.length}</td>
+            <td class="num">${fc.length}</td>
+            <td class="num"><strong>${formatarMoeda(somaFc)}</strong></td>
+            <td class="num">${conv}%</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Renderizar Cards do Kanban
+      const proximaEtapaMap = {
+        QUALIFICACAO: { dest: 'PROPOSTA', label: 'Proposta →' },
+        PROPOSTA: { dest: 'NEGOCIACAO', label: 'Negociar →' },
+        NEGOCIACAO: { dest: 'FECHAMENTO', label: 'Fechar ✓' }
+      };
+
+      etapas.forEach(et => {
+        const container = document.getElementById(`kcards-${et.key}`);
+        if (!container) return;
+        const cards = vendasFiltradas.filter(v => v.etapa_kanban === et.key);
+
+        container.innerHTML = cards.map(card => {
+          const prox = proximaEtapaMap[et.key];
+          const msgWpp = `Olá ${card.cliente}, aqui é ${card.vendedor} da Aço Forte! Passando para acompanhar seu orçamento de ${card.categoria || 'materiais'} no valor de ${formatarMoeda(card.valor)}. Podemos fechar o pedido?`;
+          const badgeSaida = card.etapa_kanban === 'FECHAMENTO'
+            ? `<div style="font-size:0.7rem;font-weight:700;color:${card.tipo_saida === 'ENTREGA LOJA' ? '#1d4ed8' : '#15803d'};margin-bottom:4px;">${card.tipo_saida === 'ENTREGA LOJA' ? '🚚 Entrega Romaneio' : '🛍️ Retira Balcão'}</div>`
+            : '';
+
+          return `
+            <div class="kanban-card" draggable="true" ondragstart="iniciarDragCard(event, ${card.id})">
+              <div class="kcard-top">
+                <span class="kcard-cat">${escaparHTML(card.categoria || 'GERAL')}</span>
+                <span class="kcard-seller">${escaparHTML(card.vendedor || 'Ewerton')}</span>
+              </div>
+              <div class="kcard-client">${escaparHTML(card.cliente)}</div>
+              <div class="kcard-val">${formatarMoeda(card.valor)}</div>
+              ${badgeSaida}
+              <div class="kcard-meta">${formatarDataBR(card.data)}${card.observacao ? ' • ' + escaparHTML(card.observacao) : ''}</div>
+              <div class="kcard-actions">
+                <button type="button" class="kcard-btn kcard-btn-wpp" onclick="abrirWhatsAppDesktop('${escaparHTML(card.telefone || '')}', '${escaparHTML(card.cliente)}', '${escaparHTML(msgWpp)}', 'FOLLOW-UP')">💬 WhatsApp</button>
+                ${prox ? `<button type="button" class="kcard-btn kcard-btn-move" onclick="moverEtapaKanban(${card.id}, '${prox.dest}')">${prox.label}</button>` : ''}
+                <button type="button" class="kcard-btn kcard-btn-del" onclick="excluirRegistroCrm(${card.id})">✕</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      });
+
+      // Renderizar Contatos, Curva ABC, Ticket Médio e Frequência
+      let contatosFiltrados = listaClientesConsolidada;
+      if (buscaGlobal) {
+        contatosFiltrados = contatosFiltrados.filter(c =>
+          c.nome.includes(buscaGlobal) || c.codigo.includes(buscaGlobal) || c.telefone.includes(buscaGlobal)
+        );
+      }
+      if (filtroStatusContatosAtual === 'COMPRADORES') {
+        contatosFiltrados = contatosFiltrados.filter(c => c.qtdCompras > 0);
+      } else if (filtroStatusContatosAtual === 'CURVA_A') {
+        contatosFiltrados = contatosFiltrados.filter(c => c.curvaABC === 'A');
+      } else if (filtroStatusContatosAtual === 'INATIVOS') {
+        contatosFiltrados = contatosFiltrados.filter(c => c.diasSemComprar !== null && c.diasSemComprar >= 45);
+      }
+
+      const exibidos = contatosFiltrados.slice(0, 150);
+      document.getElementById('crm-contatos-info').textContent = `Exibindo ${exibidos.length} de ${contatosFiltrados.length} cliente(s)`;
+
+      document.getElementById('tbody-crm-contatos').innerHTML = exibidos.map(c => {
+        let badgeRec = `<span class="status-recencia" style="background:#f3f4f6;color:#4b5563;">Base Cadastrada</span>`;
+        if (c.diasSemComprar !== null) {
+          if (c.diasSemComprar <= 30) {
+            badgeRec = `<span class="status-recencia rec-ativo">Ativo (${c.diasSemComprar}d)</span>`;
+          } else if (c.diasSemComprar < 45) {
+            badgeRec = `<span class="status-recencia rec-atencao">Atenção (${c.diasSemComprar}d)</span>`;
+          } else {
+            badgeRec = `<span class="status-recencia rec-inativo">Inativo (${c.diasSemComprar}d)</span>`;
+          }
+        }
+
+        const badgeABC = c.curvaABC !== '-'
+          ? `<span class="abc-badge abc-${c.curvaABC}">Classe ${c.curvaABC}</span>`
+          : `<span style="color:#a8a29e;">-</span>`;
+
+        const msgReativacao = `Olá ${c.nome}, tudo bem? Aqui é ${vendedorAtivo || 'Ewerton'} da Aço Forte! Estamos com reposição de aço, telhas, forro PVC e ferragens com condições especiais hoje. Precisando de cotação para sua obra ou serralheria, é só chamar por aqui!`;
+
+        return `
+          <tr>
+            <td><strong>${c.rank ? '#' + c.rank : '-'}</strong></td>
+            <td>${escaparHTML(c.codigo)}</td>
+            <td><strong>${escaparHTML(c.nome)}</strong></td>
+            <td>${badgeABC}</td>
+            <td class="num">${c.qtdCompras}</td>
+            <td class="num">${formatarMoeda(c.ticketMedio)}</td>
+            <td>${escaparHTML(c.textoFrequencia)}</td>
+            <td class="num"><strong>${formatarMoeda(c.totalComprado)}</strong></td>
+            <td>${badgeRec}</td>
+            <td style="display:flex;gap:6px;">
+              <button type="button" class="kcard-btn kcard-btn-wpp" onclick="abrirWhatsAppDesktop('${escaparHTML(c.telefone)}', '${escaparHTML(c.nome)}', '${escaparHTML(msgReativacao)}', 'REATIVAÇÃO')">💬 WhatsApp</button>
+              <button type="button" class="kcard-btn kcard-btn-move" onclick="abrirModalNovoNegocio('${escaparHTML(c.nome)}', '${escaparHTML(c.codigo === '-' ? '' : c.codigo)}', '${escaparHTML(c.telefone)}')">+ Orçamento</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Renderizar Propostas Abertas
+      document.getElementById('tbody-crm-propostas').innerHTML = abertas.map(p => {
+        const msgWpp = `Olá ${p.cliente}, aqui é ${p.vendedor} da Aço Forte! Passando para saber se conseguiu analisar nosso orçamento de ${p.categoria || 'materiais'} (${formatarMoeda(p.valor)}).`;
+        return `
+          <tr>
+            <td>${formatarDataBR(p.data)}</td>
+            <td><strong>${escaparHTML(p.vendedor)}</strong></td>
+            <td>${escaparHTML(p.cliente)}</td>
+            <td>${escaparHTML(p.categoria || '-')}</td>
+            <td>${escaparHTML(p.etapa_kanban)}</td>
+            <td class="num"><strong>${formatarMoeda(p.valor)}</strong></td>
+            <td>${escaparHTML(p.observacao || '-')}</td>
+            <td style="display:flex;gap:6px;">
+              <button type="button" class="kcard-btn kcard-btn-wpp" onclick="abrirWhatsAppDesktop('${escaparHTML(p.telefone || '')}', '${escaparHTML(p.cliente)}', '${escaparHTML(msgWpp)}', 'FOLLOW-UP')">💬 Cobrar WhatsApp</button>
+              <button type="button" class="kcard-btn kcard-btn-move" onclick="moverEtapaKanban(${p.id}, 'FECHAMENTO')">Fechar Venda ✓</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     inicializarDados();
