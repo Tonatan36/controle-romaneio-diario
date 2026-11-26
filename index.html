@@ -6,6 +6,8 @@
   <title>Controle de Romaneio & CRM — Aço Forte</title>
   <meta name="theme-color" content="#0f172a" />
   <link rel="manifest" href="manifest.json" />
+  <!-- Biblioteca PDF.js para leitura local de Orçamentos/Pedidos do OG1 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
       --bg-body: #f4f6f8;
@@ -453,6 +455,21 @@
       cursor: pointer;
     }
     .crm-btn-dark:hover { background: #27272a; }
+    .crm-btn-pdf {
+      background: #15803d;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 0.84rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 3px 10px rgba(21, 128, 61, 0.22);
+    }
+    .crm-btn-pdf:hover { background: #166534; }
     .crm-btn-soft {
       background: #ece6da;
       color: #18181b;
@@ -695,6 +712,18 @@
       display: inline-block;
     }
 
+    .badge-og1-doc {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 6px;
+      white-space: nowrap;
+      display: inline-block;
+    }
+
     .monday-group-footer {
       background: #f8f4ec;
       padding: 8px 16px;
@@ -837,6 +866,7 @@
       font-size: 0.86rem;
       color: #18181b;
       line-height: 1.4;
+      white-space: pre-line;
     }
 
     /* MODAIS */
@@ -857,7 +887,9 @@
       border-radius: 22px;
       padding: 22px;
       width: 100%;
-      max-width: 520px;
+      max-width: 540px;
+      max-height: 92vh;
+      overflow-y: auto;
       box-shadow: 0 20px 50px rgba(0,0,0,0.25);
       color: #18181b;
     }
@@ -882,6 +914,18 @@
       gap: 10px;
     }
     .seller-choice-btn:hover { background: #18181b; color: #facc15; border-color: #18181b; }
+
+    .pdf-items-preview {
+      background: #f5f0e6;
+      border: 1px solid #dfd6c7;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 0.78rem;
+      color: #292524;
+      max-height: 130px;
+      overflow-y: auto;
+      line-height: 1.45;
+    }
 
     @media (max-width: 1120px) {
       .crm-bi-grid { grid-template-columns: 1fr; }
@@ -1305,7 +1349,7 @@
     </section>
   </div>
 
-  <!-- ================= WORKSPACE 2: CRM COMERCIAL (VÉRTICE + MONDAY CRM) ================= -->
+  <!-- ================= WORKSPACE 2: CRM COMERCIAL (VÉRTICE + MONDAY CRM + PDF OG1) ================= -->
   <div id="crm-workspace">
     <aside class="crm-sidebar">
       <div>
@@ -1406,6 +1450,8 @@
             <option value="Paulo">👤 Paulo</option>
             <option value="Yan">👤 Yan</option>
           </select>
+          <input type="file" id="input-pdf-og1" accept=".pdf,application/pdf" style="display:none;" />
+          <button type="button" class="crm-btn-pdf" onclick="document.getElementById('input-pdf-og1').click()">📄 Importar PDF OG1</button>
           <button type="button" class="crm-btn-soft" onclick="sincronizarDadosCRM()">🔄 Sincronizar</button>
           <button type="button" class="crm-btn-dark" onclick="abrirModalNovoNegocio()">+ Novo Negócio / Orçamento</button>
         </div>
@@ -1539,6 +1585,7 @@
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <span id="monday-sla-aviso" style="font-size:0.8rem;font-weight:700;color:#b91c1c;"></span>
+            <button type="button" class="crm-btn-pdf" style="padding:5px 12px;min-height:30px;font-size:0.78rem;" onclick="document.getElementById('input-pdf-og1').click()">📄 Importar PDF OG1</button>
             <button type="button" class="crm-btn-soft" style="padding:5px 12px;min-height:30px;font-size:0.78rem;" onclick="abrirModalNovoNegocio()">+ Adicionar Item ao Quadro</button>
           </div>
         </div>
@@ -1692,15 +1739,22 @@
     </div>
   </div>
 
-  <!-- MODAL 2: NOVO NEGÓCIO / ORÇAMENTO -->
+  <!-- MODAL 2: NOVO NEGÓCIO / ORÇAMENTO / CONFERÊNCIA PDF OG1 -->
   <div id="modal-novo-negocio" class="crm-modal-backdrop">
     <div class="crm-modal">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <h3>Novo Negócio / Orçamento</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div>
+          <h3 id="modal-nn-titulo">Novo Negócio / Orçamento</h3>
+          <span id="modal-nn-subtitulo" style="font-size:0.78rem;color:#15803d;font-weight:700;"></span>
+        </div>
         <button type="button" class="crm-btn-soft" onclick="fecharModalNovoNegocio()">✕</button>
       </div>
       <form id="form-novo-negocio" style="display:flex;flex-direction:column;gap:10px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          <div class="field">
+            <label>Nº Doc. OG1</label>
+            <input type="text" id="nn-num-doc" placeholder="Ex.: 030441" />
+          </div>
           <div class="field">
             <label>Vendedor</label>
             <select id="nn-vendedor">
@@ -1711,7 +1765,7 @@
             </select>
           </div>
           <div class="field">
-            <label>Código do Cliente</label>
+            <label>Cód. Cliente</label>
             <input type="text" id="nn-codigo" inputmode="numeric" placeholder="Ex.: 101132" />
           </div>
         </div>
@@ -1725,7 +1779,7 @@
             <input type="text" id="nn-telefone" placeholder="Ex.: 83999999999" />
           </div>
           <div class="field">
-            <label>Categoria</label>
+            <label>Categoria Principal</label>
             <select id="nn-categoria">
               <option value="AÇO / PERFIS">AÇO / PERFIS</option>
               <option value="TELHA">TELHA</option>
@@ -1738,7 +1792,7 @@
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
           <div class="field">
-            <label>Valor (R$) *</label>
+            <label>Valor Total (R$) *</label>
             <input type="text" id="nn-valor" inputmode="numeric" placeholder="R$ 0,00" required />
           </div>
           <div class="field">
@@ -1747,7 +1801,7 @@
               <option value="NEGOCIACAO">🟢 Negociação</option>
               <option value="PROPOSTA" selected>🟠 Proposta enviada</option>
               <option value="QUALIFICACAO">🟡 Qualificação</option>
-              <option value="FECHAMENTO">🔵 Fechamento</option>
+              <option value="FECHAMENTO">🔵 Pedido Fechado ✓</option>
             </select>
           </div>
           <div class="field">
@@ -1766,8 +1820,12 @@
             <option value="ENTREGA LOJA">🚚 Entrega Loja (Enviar p/ Romaneio)</option>
           </select>
         </div>
+        <div id="nn-pdf-itens-box" style="display:none;">
+          <label style="font-size:0.78rem;margin-bottom:4px;">📦 Itens extraídos do PDF do OG1:</label>
+          <div id="nn-pdf-itens-preview" class="pdf-items-preview"></div>
+        </div>
         <div class="field">
-          <label>Observação / Materiais cotados</label>
+          <label>Observação / Resumo dos Materiais</label>
           <input type="text" id="nn-obs" placeholder="Ex.: 20 barras metalon 30x20 + 10 telhas" />
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
@@ -1779,6 +1837,12 @@
   </div>
 
   <script>
+    // ================= CONFIGURAÇÃO PDF.JS =================
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
     // ================= CONFIGURAÇÃO SUPABASE =================
     const SUPABASE_REST_URL = 'https://iqfcyxuhqnluucifylqn.supabase.co/rest/v1';
     const SUPABASE_API_KEY = 'sb_publishable_PSTBZr3SnTxlmCqxFth3Pw_3LLr38Gb';
@@ -1815,6 +1879,7 @@
     let gruposColapsados = {};
     let drawerNegocioId = null;
     let dragCardId = null;
+    let itensExtraidosPdfAtual = '';
 
     function obterDataHojeLocal() {
       const agora = new Date();
@@ -1985,13 +2050,17 @@
       return String(Math.max(...codigosNumericos) + 1);
     }
 
-    async function salvarNovoClienteNoBanco(codigoInformado, nomeCliente, telefoneInformado = '') {
+    async function salvarNovoClienteNoBanco(codigoInformado, nomeCliente, telefoneInformado = '', enderecoInformado = '') {
       const nomeLimpo = String(nomeCliente || '').trim().toUpperCase();
-      if (!nomeLimpo || nomeLimpo === 'BALCÃO AVULSO') return null;
+      if (!nomeLimpo || nomeLimpo === 'BALCÃO AVULSO' || nomeLimpo === 'CONSUMIDOR FINAL') return null;
 
       let codLimpo = String(codigoInformado || '').trim().replace(/\D/g, '');
 
       if (codLimpo && mapaClientes[codLimpo]) {
+        if (telefoneInformado && !mapaClientes[codLimpo].telefone) {
+          mapaClientes[codLimpo].telefone = String(telefoneInformado).trim();
+          salvarBaseClientesLocal();
+        }
         return mapaClientes[codLimpo];
       }
 
@@ -2008,7 +2077,7 @@
         nome: nomeLimpo,
         telefone: String(telefoneInformado || '').trim(),
         bairro: '',
-        endereco: ''
+        endereco: String(enderecoInformado || '').trim().toUpperCase()
       };
 
       mapaClientes[codLimpo] = novoRegistro;
@@ -2022,7 +2091,8 @@
           body: JSON.stringify([{
             codigo: Number(codLimpo),
             nome: nomeLimpo,
-            telefone: novoRegistro.telefone || null
+            telefone: novoRegistro.telefone || null,
+            endereco_completo: novoRegistro.endereco || null
           }])
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -3176,6 +3246,188 @@
       }
     }
 
+    // ================= IMPORTADOR DE PDF DO SISTEMA OG1 =================
+    function classificarCategoriaPorProdutos(textoProdutos) {
+      const txt = String(textoProdutos || '').toUpperCase();
+      if (/TELHA|CUMIEIRA|GALVALUME|TRAPEZOIDAL/.test(txt)) return 'TELHA';
+      if (/FORRO|PVC|RODAFORRO|METALON/.test(txt)) return 'FORRO PVC';
+      if (/POSTE|ENERGISA|CAIXA MEDIDOR/.test(txt)) return 'POSTE ENERGISA';
+      if (/ALUMINIO|ALUMÍNIO|LAMBRI|PERFIL AL/.test(txt)) return 'ALUMÍNIO';
+      if (/PARAFUSO|BROCA|DISCO|ELETRODO|FECHADURA|DOBRADICA|ARAME|PREGO/.test(txt)) return 'FERRAGENS';
+      return 'AÇO / PERFIS';
+    }
+
+    function mapearVendedorOg1(nomeOg1) {
+      const n = String(nomeOg1 || '').toUpperCase();
+      if (n.includes('EWERTON')) return 'Ewerton';
+      if (n.includes('ALEXANDRE')) return 'Alexandre';
+      if (n.includes('PAULO')) return 'Paulo';
+      if (n.includes('YAN')) return 'Yan';
+      return vendedorAtivo || 'Ewerton';
+    }
+
+    async function extrairTextoPdfOg1(file) {
+      if (!window.pdfjsLib) {
+        throw new Error('Biblioteca PDF.js não carregada. Verifique sua conexão com a internet.');
+      }
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let textoCompleto = '';
+
+      for (let numPagina = 1; numPagina <= pdf.numPages; numPagina++) {
+        const pagina = await pdf.getPage(numPagina);
+        const content = await pagina.getTextContent();
+        const linhasPorY = {};
+
+        content.items.forEach(item => {
+          const y = Math.round(item.transform[5] / 4) * 4;
+          if (!linhasPorY[y]) linhasPorY[y] = [];
+          linhasPorY[y].push({ x: item.transform[4], str: item.str });
+        });
+
+        const ysOrdenados = Object.keys(linhasPorY).map(Number).sort((a, b) => b - a);
+        ysOrdenados.forEach(y => {
+          const linha = linhasPorY[y]
+            .sort((a, b) => a.x - b.x)
+            .map(i => i.str.trim())
+            .filter(Boolean)
+            .join(' ');
+          if (linha) textoCompleto += linha + '\n';
+        });
+      }
+      return textoCompleto;
+    }
+
+    function interpretarDadosOg1(texto) {
+      const upper = texto.toUpperCase();
+
+      // 1. Tipo documento (ORÇAMENTO ou PEDIDO) e Número
+      const isPedido = /PEDIDO\s+DE\s+VENDA|N[º°]?\s*PEDIDO/.test(upper) && !/OR[ÇC]AMENTO/.test(upper.slice(0, 350));
+      const matchDoc = upper.match(/(?:OR[ÇC]AMENTO|PEDIDO)\s*(?:N[º°.:]*)?\s*(\d{4,8})/);
+      const numeroDoc = matchDoc ? matchDoc[1] : '';
+
+      // 2. Código e Nome do Cliente
+      let codigoCliente = '';
+      let nomeCliente = '';
+      const matchClienteCod = texto.match(/Cliente\s*:\s*(\d{1,8})\s*[-–]\s*([^\n\r]+)/i);
+      if (matchClienteCod) {
+        codigoCliente = matchClienteCod[1].trim();
+        nomeCliente = matchClienteCod[2].replace(/\s+(?:CPF|CNPJ|Fone|Tel|End).*$/i, '').trim().toUpperCase();
+      } else {
+        const matchClienteSemCod = texto.match(/Cliente\s*:\s*([^\n\r]+)/i);
+        if (matchClienteSemCod) {
+          nomeCliente = matchClienteSemCod[1].replace(/\s+(?:CPF|CNPJ|Fone|Tel|End).*$/i, '').trim().toUpperCase();
+        }
+      }
+
+      // 3. Telefone / WhatsApp
+      const matchTel = texto.match(/(?:Fone|Telefone|Celular|WhatsApp)\s*:\s*\(?(\d{2})\)?\s*(\d{4,5}[-\s]?\d{4})/i);
+      const telefone = matchTel ? `${matchTel[1]}${matchTel[2].replace(/\D/g, '')}` : '';
+
+      // 4. Vendedor
+      const matchVend = texto.match(/Vendedor\s*:\s*([^\n\r]+)/i);
+      const vendedorRaw = matchVend ? matchVend[1].trim() : '';
+      const vendedorMapeado = mapearVendedorOg1(vendedorRaw);
+
+      // 5. Valor Total
+      let valorTotal = 0;
+      const regexTotais = /(?:Total\s+(?:L[íi]quido|Geral|do\s+Or[çc]amento|do\s+Pedido|a\s+Pagar)|Valor\s+Total)\s*:?\s*(?:R\$\s*)?([\d.,]+)/gi;
+      let mTot;
+      while ((mTot = regexTotais.exec(texto)) !== null) {
+        const val = extrairValorMonetario(mTot[1]);
+        if (val > valorTotal) valorTotal = val;
+      }
+      if (valorTotal === 0) {
+        const matchUltimoReal = [...texto.matchAll(/R\$\s*([\d.]+,\d{2})/g)];
+        if (matchUltimoReal.length) {
+          valorTotal = extrairValorMonetario(matchUltimoReal[matchUltimoReal.length - 1][1]);
+        }
+      }
+
+      // 6. Itens / Materiais cotados
+      const linhas = texto.split('\n').map(l => l.trim()).filter(Boolean);
+      const itensEncontrados = [];
+      linhas.forEach(l => {
+        if (/^\d{3,8}\s+[A-ZÀ-Ú0-9]/.test(l) && !/CNPJ|CEP|FONE|CLIENTE|VENDEDOR|TOTAL/i.test(l)) {
+          const limpo = l.replace(/^\d{3,8}\s+/, '').replace(/\s+[\d.,]+\s+[\d.,]+$/, '').trim();
+          if (limpo.length > 4 && itensEncontrados.length < 15) {
+            itensEncontrados.push(limpo);
+          }
+        }
+      });
+
+      const listaItensTexto = itensEncontrados.join('\n');
+      const categoria = classificarCategoriaPorProdutos(listaItensTexto || texto);
+
+      return {
+        isPedido,
+        numeroDoc,
+        codigoCliente,
+        nomeCliente,
+        telefone,
+        vendedor: vendedorMapeado,
+        valorTotal,
+        categoria,
+        itensTexto: listaItensTexto,
+        resumoCurto: itensEncontrados.slice(0, 3).join(' | ').slice(0, 140)
+      };
+    }
+
+    document.getElementById('input-pdf-og1').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const textoPdf = await extrairTextoPdfOg1(file);
+        const dados = interpretarDadosOg1(textoPdf);
+
+        document.getElementById('modal-nn-titulo').textContent = dados.isPedido
+          ? '📄 Pedido OG1 Importado — Conferir & Lançar'
+          : '📄 Orçamento OG1 Importado — Conferir & Lançar';
+        document.getElementById('modal-nn-subtitulo').textContent =
+          `✓ PDF "${file.name}" lido com sucesso! Confira os dados abaixo e clique em Salvar.`;
+
+        document.getElementById('nn-num-doc').value = dados.numeroDoc || '';
+        document.getElementById('nn-vendedor').value = dados.vendedor;
+        document.getElementById('nn-codigo').value = dados.codigoCliente || '';
+        document.getElementById('nn-cliente').value = dados.nomeCliente || '';
+        document.getElementById('nn-telefone').value = dados.telefone || '';
+        document.getElementById('nn-categoria').value = dados.categoria;
+
+        if (dados.valorTotal > 0) {
+          nnValor.value = formatarMoeda(dados.valorTotal);
+        } else {
+          nnValor.value = '';
+        }
+
+        document.getElementById('nn-etapa').value = dados.isPedido ? 'FECHAMENTO' : 'PROPOSTA';
+        document.getElementById('nn-temperatura').value = dados.isPedido ? 'QUENTE' : 'MORNO';
+
+        const prefixoDoc = dados.numeroDoc
+          ? (dados.isPedido ? `PEDIDO OG1 #${dados.numeroDoc}` : `ORÇ. OG1 #${dados.numeroDoc}`)
+          : 'PDF OG1';
+        document.getElementById('nn-obs').value = dados.resumoCurto
+          ? `${prefixoDoc} — ${dados.resumoCurto}`
+          : prefixoDoc;
+
+        itensExtraidosPdfAtual = dados.itensTexto;
+        const previewBox = document.getElementById('nn-pdf-itens-box');
+        const previewDiv = document.getElementById('nn-pdf-itens-preview');
+        if (dados.itensTexto) {
+          previewDiv.textContent = dados.itensTexto;
+          previewBox.style.display = 'block';
+        } else {
+          previewBox.style.display = 'none';
+        }
+
+        document.getElementById('modal-novo-negocio').classList.add('open');
+      } catch (err) {
+        alert('Não foi possível ler este PDF do OG1. Detalhe: ' + (err.message || err));
+      } finally {
+        e.target.value = '';
+      }
+    });
+
     // ================= LÓGICA DO CRM COMERCIAL + RECURSOS MONDAY =================
     function carregarCacheCrmLocal() {
       try {
@@ -3246,12 +3498,15 @@
     async function enviarVendaCrmParaRomaneio(registro) {
       if (registro.romaneio_id) return registro.romaneio_id;
       const novoRomaneioId = Date.now() + Math.floor(Math.random() * 999);
+      const matchOg1 = String(registro.observacao || '').match(/#(\d{4,8})/);
+      const numPedidoRomaneio = matchOg1 ? matchOg1[1] : `CRM-${String(novoRomaneioId).slice(-5)}`;
+
       const novoPedidoRomaneio = {
         id: novoRomaneioId,
         data: registro.data || obterDataHojeLocal(),
         turno: obterTurnoAtualSugerido(),
         motorista: 'A DEFINIR',
-        pedido: `CRM-${String(novoRomaneioId).slice(-5)}`,
+        pedido: numPedidoRomaneio,
         cliente: String(registro.cliente || '').toUpperCase(),
         valor: Number(registro.valor || 0),
         observacao: `[CRM ${registro.vendedor.toUpperCase()}] ${(registro.categoria || '')} ${(registro.observacao || '')}`.trim().toUpperCase(),
@@ -3327,7 +3582,7 @@
 
       const titulos = {
         'visao-geral': ['Visão Geral Comercial', 'Meta mensal, Curva ABC, Ticket Médio, Frequência e entregas integradas'],
-        'negocios': ['Negócios — Quadros & Tabela Viva (Monday)', 'Clique nas etiquetas coloridas para mudar status ou clique no cliente para abrir a linha do tempo'],
+        'negocios': ['Negócios — Quadros & Tabela Viva (Monday)', 'Importe PDF do OG1, clique nas etiquetas coloridas ou abra a linha do tempo do cliente'],
         'contatos': ['Carteira de Clientes & Curva ABC', 'Ranking consolidado (Romaneio + Balcão) com Ticket Médio, Frequência e Reativação'],
         'propostas': ['Radar de Follow-up (+3 Dias Parados)', 'Orçamentos aguardando retorno ordenados por urgência']
       };
@@ -3440,12 +3695,17 @@
 
     // Modal Novo Negócio
     function abrirModalNovoNegocio(clientePre = '', codigoPre = '', telefonePre = '') {
+      document.getElementById('modal-nn-titulo').textContent = 'Novo Negócio / Orçamento';
+      document.getElementById('modal-nn-subtitulo').textContent = '';
+      document.getElementById('nn-num-doc').value = '';
       document.getElementById('nn-vendedor').value = vendedorAtivo || 'Ewerton';
       document.getElementById('nn-codigo').value = codigoPre;
       document.getElementById('nn-cliente').value = clientePre;
       document.getElementById('nn-telefone').value = telefonePre;
       nnValor.value = '';
       document.getElementById('nn-obs').value = '';
+      itensExtraidosPdfAtual = '';
+      document.getElementById('nn-pdf-itens-box').style.display = 'none';
       document.getElementById('modal-novo-negocio').classList.add('open');
       setTimeout(() => document.getElementById('nn-cliente').focus(), 50);
     }
@@ -3465,6 +3725,7 @@
 
     document.getElementById('form-novo-negocio').addEventListener('submit', async e => {
       e.preventDefault();
+      const numDoc = document.getElementById('nn-num-doc').value.trim().toUpperCase();
       const vendedor = document.getElementById('nn-vendedor').value;
       const cod = document.getElementById('nn-codigo').value.trim();
       const cliente = document.getElementById('nn-cliente').value.trim().toUpperCase();
@@ -3474,11 +3735,31 @@
       const etapa = document.getElementById('nn-etapa').value;
       const temperatura = document.getElementById('nn-temperatura').value;
       const tipoSaida = document.getElementById('nn-saida').value;
-      const obs = document.getElementById('nn-obs').value.trim().toUpperCase();
+      let obs = document.getElementById('nn-obs').value.trim().toUpperCase();
 
       if (!cliente || valor <= 0) return;
 
+      if (numDoc && !obs.includes(numDoc)) {
+        const tag = etapa === 'FECHAMENTO' ? `PEDIDO OG1 #${numDoc}` : `ORÇ. OG1 #${numDoc}`;
+        obs = obs ? `${tag} — ${obs}` : tag;
+      }
+
       await salvarNovoClienteNoBanco(cod, cliente, telefone);
+
+      const notasIniciais = [];
+      if (itensExtraidosPdfAtual) {
+        notasIniciais.push({
+          autor: vendedor,
+          dataHora: `${formatarDataBR(obterDataHojeLocal())} ${obterHoraAtualBR().slice(0, 5)}`,
+          texto: `Itens importados do PDF OG1:\n${itensExtraidosPdfAtual}`
+        });
+      } else if (obs) {
+        notasIniciais.push({
+          autor: vendedor,
+          dataHora: `${formatarDataBR(obterDataHojeLocal())} ${obterHoraAtualBR().slice(0, 5)}`,
+          texto: obs
+        });
+      }
 
       const registro = {
         id: Date.now(),
@@ -3494,7 +3775,7 @@
         motivo_perda: '',
         valor,
         observacao: obs,
-        notas_timeline: obs ? [{ autor: vendedor, dataHora: `${formatarDataBR(obterDataHojeLocal())} ${obterHoraAtualBR().slice(0, 5)}`, texto: obs }] : [],
+        notas_timeline: notasIniciais,
         romaneio_id: null
       };
 
@@ -3852,7 +4133,6 @@
       document.getElementById('kpi-romaneio-mes').textContent = formatarMoeda(somaEntregasMes);
       document.getElementById('kpi-romaneio-mes-sub').textContent = `${entregasMes.length} entrega(s) na expedição`;
 
-      // Soma consolidada do mês (sem duplicar itens do CRM que viraram romaneio)
       const fechadasSoBalcaoMes = fechadasMes.filter(v => !v.romaneio_id).reduce((acc, i) => acc + Number(i.valor || 0), 0);
       const faturamentoMesConsolidado = somaEntregasMes + fechadasSoBalcaoMes;
       const pctMeta = metaMensalLoja > 0 ? Math.min(100, Math.round((faturamentoMesConsolidado / metaMensalLoja) * 100)) : 0;
@@ -3928,6 +4208,10 @@
                 const seloAtraso = (isAberto && diasAberto >= 3)
                   ? `<span class="badge-atraso-sla">⏰ ${diasAberto}d parado</span>`
                   : '';
+                const matchDoc = String(item.observacao || '').match(/(?:ORÇ\.|PEDIDO)\s*OG1\s*#(\d+)/i);
+                const seloDocOg1 = matchDoc
+                  ? `<span class="badge-og1-doc">OG1 #${matchDoc[1]}</span>`
+                  : '';
                 const tempAtual = (item.temperatura || 'MORNO').toUpperCase();
                 const qtdNotas = Array.isArray(item.notas_timeline) ? item.notas_timeline.length : 0;
                 const msgWpp = `Olá ${item.cliente}, aqui é ${item.vendedor} da Aço Forte! Passando para acompanhar seu orçamento de ${item.categoria || 'materiais'} no valor de ${formatarMoeda(item.valor)}.`;
@@ -3936,7 +4220,7 @@
                   <tr>
                     <td>
                       <div class="monday-item-link" onclick="abrirDrawerNegocio(${item.id})" title="Abrir linha do tempo e anotações">
-                        <span>${escaparHTML(item.cliente)} ${seloAtraso}</span>
+                        <span>${escaparHTML(item.cliente)} ${seloDocOg1} ${seloAtraso}</span>
                         <span style="font-size:0.72rem;color:#78716c;background:#f2ece1;padding:2px 7px;border-radius:999px;">💬 ${qtdNotas}</span>
                       </div>
                     </td>
