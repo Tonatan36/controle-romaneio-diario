@@ -6,6 +6,8 @@
   <title>Controle de Romaneio & CRM — Aço Forte</title>
   <meta name="theme-color" content="#0f172a" />
   <link rel="manifest" href="manifest.json" />
+  <!-- PDF.js para leitura automática de orçamentos do OG1 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
       --bg-body: #f4f6f8;
@@ -125,6 +127,7 @@
     tr.row-entregue { background: var(--row-delivered); }
     tr.row-faltou-material { background: var(--row-missing); }
     tr.row-nao-entregue { background: var(--row-failed); }
+    tr.row-meu-pedido { border-left: 4px solid #2563eb; }
 
     .inline-input { padding: 6px 8px; font-size: 0.9rem; min-width: 90px; }
     .status-box { display: flex; flex-direction: column; gap: 5px; min-width: 190px; }
@@ -171,7 +174,7 @@
     .print-sig-name { font-size: 0.85rem; font-weight: 400; margin-top: 2px; text-transform: uppercase; }
     .print-turno-text { display: none; }
 
-    /* ================= WORKSPACE CRM (VÉRTICE + MONDAY CRM) ================= */
+    /* ================= WORKSPACE CRM (VÉRTICE + MONDAY + OG1 PDF + TAREFAS) ================= */
     body.crm-mode {
       background: #ebe4d8;
       color: #18181b;
@@ -179,7 +182,7 @@
     }
     #crm-workspace {
       display: none;
-      max-width: 1520px;
+      max-width: 1540px;
       margin: 0 auto;
       min-height: calc(100vh - 24px);
       background: #f7f3ec;
@@ -193,7 +196,7 @@
     body.crm-mode #crm-workspace { display: flex; }
 
     .crm-sidebar {
-      width: 290px;
+      width: 285px;
       background: #f5f0e6;
       border-right: 1px solid #e7dfd1;
       padding: 20px 16px;
@@ -209,11 +212,7 @@
       margin-bottom: 16px;
       padding: 0 4px;
     }
-    .crm-brand {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-    }
+    .crm-brand { display: flex; align-items: center; gap: 11px; }
     .crm-logo-badge {
       width: 40px;
       height: 40px;
@@ -229,10 +228,7 @@
     .crm-brand-title { font-weight: 800; font-size: 1.08rem; color: #18181b; line-height: 1.15; }
     .crm-brand-sub { font-size: 0.76rem; color: #78716c; font-weight: 500; }
 
-    .crm-search-box {
-      position: relative;
-      margin-bottom: 16px;
-    }
+    .crm-search-box { position: relative; margin-bottom: 16px; }
     .crm-search-box input {
       width: 100%;
       background: #ece6da;
@@ -243,31 +239,9 @@
       color: #18181b;
       text-transform: none !important;
     }
-    .crm-search-box input:focus {
-      outline: 2px solid #18181b;
-      background: #fffdf9;
-    }
-    .crm-search-icon {
-      position: absolute;
-      left: 13px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.9rem;
-      color: #78716c;
-      pointer-events: none;
-    }
-    .crm-kbd-hint {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: #e2dacb;
-      color: #57534e;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 6px;
-    }
+    .crm-search-box input:focus { outline: 2px solid #18181b; background: #fffdf9; }
+    .crm-search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; color: #78716c; pointer-events: none; }
+    .crm-kbd-hint { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #e2dacb; color: #57534e; font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
 
     .crm-nav { display: flex; flex-direction: column; gap: 6px; }
     .crm-nav-btn {
@@ -303,29 +277,11 @@
       font-size: 0.88rem;
       background: rgba(0,0,0,0.06);
     }
-    .crm-nav-btn.active .crm-nav-icon {
-      background: #facc15;
-      color: #18181b;
-    }
-    .crm-pill-count {
-      background: #e7dfd1;
-      color: #44403c;
-      font-size: 0.74rem;
-      font-weight: 700;
-      padding: 3px 9px;
-      border-radius: 999px;
-    }
-    .crm-nav-btn.active .crm-pill-count {
-      background: #3f3f46;
-      color: #faf7f2;
-    }
+    .crm-nav-btn.active .crm-nav-icon { background: #facc15; color: #18181b; }
+    .crm-pill-count { background: #e7dfd1; color: #44403c; font-size: 0.74rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+    .crm-nav-btn.active .crm-pill-count { background: #3f3f46; color: #faf7f2; }
 
-    .crm-negocios-group {
-      background: #efe9dd;
-      border-radius: 18px;
-      padding: 6px;
-      margin: 2px 0;
-    }
+    .crm-negocios-group { background: #efe9dd; border-radius: 18px; padding: 6px; margin: 2px 0; }
     .crm-subnav {
       display: flex;
       flex-direction: column;
@@ -349,11 +305,7 @@
       min-height: 30px;
       text-align: left;
     }
-    .crm-sub-item:hover, .crm-sub-item.active {
-      background: #e4dccd;
-      color: #18181b;
-      font-weight: 700;
-    }
+    .crm-sub-item:hover, .crm-sub-item.active { background: #e4dccd; color: #18181b; font-weight: 700; }
     .crm-sub-left { display: flex; align-items: center; gap: 8px; }
     .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
     .dot-qual { background: #eab308; }
@@ -387,8 +339,8 @@
       width: 34px;
       height: 34px;
       border-radius: 50%;
-      background: #d6cec0;
-      color: #18181b;
+      background: #18181b;
+      color: #facc15;
       font-weight: 800;
       font-size: 0.82rem;
       display: flex;
@@ -416,12 +368,50 @@
 
     .crm-main {
       flex: 1;
-      padding: 22px 26px;
+      padding: 20px 24px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
+
+    /* BARRA DE SELEÇÃO RÁPIDA DE VENDEDOR (SEM SENHA, 1 CLIQUE) */
+    .seller-quick-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ece5d8;
+      border: 1px solid #dfd6c7;
+      border-radius: 16px;
+      padding: 8px 14px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .seller-pills-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .seller-pill-btn {
+      border: 1px solid #d6cec0;
+      background: #fffdf9;
+      color: #292524;
+      border-radius: 999px;
+      padding: 5px 13px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      min-height: 30px;
+      transition: all 0.15s;
+    }
+    .seller-pill-btn:hover { background: #e4dccd; }
+    .seller-pill-btn.active {
+      background: #18181b;
+      color: #facc15;
+      border-color: #18181b;
+    }
+
     .crm-topbar {
       display: flex;
       justify-content: space-between;
@@ -429,37 +419,42 @@
       gap: 12px;
       flex-wrap: wrap;
     }
-    .crm-page-title h2 { margin: 0; font-size: 1.45rem; font-weight: 800; color: #18181b; }
-    .crm-page-title p { margin: 2px 0 0 0; font-size: 0.84rem; color: #78716c; }
+    .crm-page-title h2 { margin: 0; font-size: 1.4rem; font-weight: 800; color: #18181b; }
+    .crm-page-title p { margin: 2px 0 0 0; font-size: 0.83rem; color: #78716c; }
     .crm-topbar-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .crm-select-pill {
-      background: #ece6da;
-      border: 1px solid #dcd3c4;
-      border-radius: 999px;
-      padding: 8px 14px;
-      font-size: 0.84rem;
-      font-weight: 700;
-      color: #18181b;
-      width: auto;
-    }
+
     .crm-btn-dark {
       background: #18181b;
       color: #fff;
       border: none;
       border-radius: 999px;
-      padding: 9px 18px;
-      font-size: 0.85rem;
+      padding: 9px 16px;
+      font-size: 0.84rem;
       font-weight: 700;
       cursor: pointer;
     }
     .crm-btn-dark:hover { background: #27272a; }
+    .crm-btn-og1 {
+      background: #facc15;
+      color: #18181b;
+      border: 1.5px solid #eab308;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.84rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .crm-btn-og1:hover { background: #eab308; }
     .crm-btn-soft {
       background: #ece6da;
       color: #18181b;
       border: 1px solid #dcd3c4;
       border-radius: 999px;
       padding: 8px 14px;
-      font-size: 0.83rem;
+      font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
     }
@@ -469,59 +464,21 @@
       border-color: #18181b;
     }
 
-    .balcao-express-card {
+    /* CARD DE NOTIFICAÇÃO: TAREFAS DE HOJE & ATRASADAS */
+    .tarefas-hoje-card {
       background: #fffdf9;
-      border: 1px solid #e6dfd3;
-      border-radius: 18px;
-      padding: 14px 18px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+      border: 1.5px solid #f59e0b;
+      border-left: 6px solid #f59e0b;
+      border-radius: 16px;
+      padding: 12px 16px;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.08);
     }
-    .balcao-express-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-      gap: 8px;
+    .tarefas-hoje-card.tem-atraso {
+      border-color: #dc2626;
+      border-left-color: #dc2626;
+      background: #fffafa;
     }
-    .balcao-express-title { font-weight: 800; font-size: 0.92rem; color: #18181b; display: flex; align-items: center; gap: 6px; }
-    .balcao-cat-pills { display: flex; gap: 6px; flex-wrap: wrap; }
-    .cat-pill {
-      background: #f2ece1;
-      border: 1px solid #dfd7c8;
-      color: #44403c;
-      border-radius: 999px;
-      padding: 4px 11px;
-      font-size: 0.76rem;
-      font-weight: 700;
-      cursor: pointer;
-      min-height: 28px;
-    }
-    .cat-pill.active { background: #18181b; color: #facc15; border-color: #18181b; }
-    .balcao-express-grid {
-      display: grid;
-      grid-template-columns: 110px 1.4fr 130px 145px 145px auto;
-      gap: 8px;
-      align-items: center;
-    }
-    .balcao-express-grid input, .balcao-express-grid select {
-      background: #f7f3ec;
-      border: 1px solid #dfd7c8;
-      border-radius: 10px;
-      padding: 9px 11px;
-      font-size: 0.88rem;
-      color: #18181b;
-    }
-
-    /* META MENSAL ESTILO MONDAY DASHBOARD */
-    .meta-bar-card {
-      background: #fffdf9;
-      border: 1px solid #e6dfd3;
-      border-radius: 18px;
-      padding: 14px 18px;
-      margin-bottom: 14px;
-    }
-    .meta-bar-top {
+    .tarefas-hoje-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -529,43 +486,120 @@
       flex-wrap: wrap;
       gap: 8px;
     }
-    .meta-progress-track {
-      width: 100%;
-      height: 14px;
-      background: #ebe4d8;
-      border-radius: 999px;
-      overflow: hidden;
+    .tarefas-lista {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 8px;
     }
-    .meta-progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #16a34a, #2563eb);
-      border-radius: 999px;
-      transition: width 0.35s ease;
+    .tarefa-item-box {
+      background: #f7f3ec;
+      border: 1px solid #e4dccd;
+      border-radius: 12px;
+      padding: 9px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
     }
+    .tarefa-item-box.atrasada {
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+    .tarefa-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.74rem;
+      font-weight: 800;
+    }
+    .tarefa-tag-atraso { background: #dc2626; color: #fff; padding: 2px 7px; border-radius: 999px; }
+    .tarefa-tag-hoje { background: #f59e0b; color: #18181b; padding: 2px 7px; border-radius: 999px; }
+    .tarefa-tag-futura { background: #e0f2fe; color: #075985; padding: 2px 7px; border-radius: 999px; }
+
+    /* BALCÃO EXPRESS */
+    .balcao-express-card {
+      background: #fffdf9;
+      border: 1px solid #e6dfd3;
+      border-radius: 18px;
+      padding: 13px 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+    }
+    .balcao-express-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 9px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .balcao-express-title { font-weight: 800; font-size: 0.9rem; color: #18181b; display: flex; align-items: center; gap: 6px; }
+    .balcao-cat-pills { display: flex; gap: 5px; flex-wrap: wrap; }
+    .cat-pill {
+      background: #f2ece1;
+      border: 1px solid #dfd7c8;
+      color: #44403c;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 26px;
+    }
+    .cat-pill.active { background: #18181b; color: #facc15; border-color: #18181b; }
+    .balcao-express-grid {
+      display: grid;
+      grid-template-columns: 105px 1.4fr 125px 135px 145px auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .balcao-express-grid input, .balcao-express-grid select {
+      background: #f7f3ec;
+      border: 1px solid #dfd7c8;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 0.86rem;
+      color: #18181b;
+    }
+
+    /* META MENSAL */
+    .meta-bar-card {
+      background: #fffdf9;
+      border: 1px solid #e6dfd3;
+      border-radius: 18px;
+      padding: 13px 16px;
+      margin-bottom: 12px;
+    }
+    .meta-bar-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+    .meta-progress-track { width: 100%; height: 13px; background: #ebe4d8; border-radius: 999px; overflow: hidden; }
+    .meta-progress-fill { height: 100%; background: linear-gradient(90deg, #16a34a, #2563eb); border-radius: 999px; transition: width 0.35s ease; }
 
     .crm-kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 11px;
     }
     .crm-kpi-card {
       background: #fffdf9;
       border: 1px solid #e6dfd3;
       border-radius: 18px;
-      padding: 15px 17px;
+      padding: 14px 16px;
     }
-    .crm-kpi-label { font-size: 0.74rem; font-weight: 700; color: #78716c; text-transform: uppercase; letter-spacing: 0.4px; }
-    .crm-kpi-value { font-size: 1.4rem; font-weight: 900; color: #18181b; margin: 5px 0 3px 0; }
-    .crm-kpi-sub { font-size: 0.75rem; color: #57534e; }
+    .crm-kpi-label { font-size: 0.72rem; font-weight: 700; color: #78716c; text-transform: uppercase; letter-spacing: 0.4px; }
+    .crm-kpi-value { font-size: 1.35rem; font-weight: 900; color: #18181b; margin: 4px 0 3px 0; }
+    .crm-kpi-sub { font-size: 0.74rem; color: #57534e; }
 
     .crm-bi-grid {
       display: grid;
-      grid-template-columns: 1.35fr 1fr;
+      grid-template-columns: 1fr 1.2fr;
       gap: 14px;
       margin-top: 14px;
     }
 
-    /* ================= ESTILO MONDAY CRM: TABELA AGRUPADA + CÉLULAS CLICÁVEIS ================= */
+    /* BARRA DE CATEGORIA NO RANKING */
+    .cat-bar-track { width: 100%; height: 8px; background: #ebe4d8; border-radius: 999px; overflow: hidden; margin-top: 4px; }
+    .cat-bar-fill { height: 100%; background: #18181b; border-radius: 999px; }
+
+    /* TABELA AGRUPADA MONDAY + CÉLULAS CLICÁVEIS */
     .monday-toolbar {
       display: flex;
       justify-content: space-between;
@@ -578,28 +612,9 @@
       border-radius: 16px;
       padding: 10px 14px;
     }
-    .view-switcher {
-      display: inline-flex;
-      background: #ece6da;
-      padding: 4px;
-      border-radius: 999px;
-      gap: 4px;
-    }
-    .view-sw-btn {
-      border: none;
-      background: transparent;
-      color: #44403c;
-      font-size: 0.82rem;
-      font-weight: 800;
-      padding: 6px 14px;
-      border-radius: 999px;
-      cursor: pointer;
-      min-height: 30px;
-    }
-    .view-sw-btn.active {
-      background: #18181b;
-      color: #facc15;
-    }
+    .view-switcher { display: inline-flex; background: #ece6da; padding: 4px; border-radius: 999px; gap: 4px; }
+    .view-sw-btn { border: none; background: transparent; color: #44403c; font-size: 0.82rem; font-weight: 800; padding: 6px 14px; border-radius: 999px; cursor: pointer; min-height: 30px; }
+    .view-sw-btn.active { background: #18181b; color: #facc15; }
 
     .monday-group {
       background: #fffdf9;
@@ -621,47 +636,17 @@
       user-select: none;
     }
     .monday-group-header:hover { background: #f8f4ec; }
-    .monday-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 860px;
-    }
-    .monday-table th {
-      background: #f5f0e6;
-      color: #57534e;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      padding: 8px 10px;
-      border-bottom: 1px solid #e4dccd;
-      border-right: 1px solid #ece5d8;
-    }
-    .monday-table td {
-      padding: 0;
-      border-bottom: 1px solid #ece5d8;
-      border-right: 1px solid #ece5d8;
-      font-size: 0.84rem;
-      color: #18181b;
-      height: 40px;
-    }
+    .monday-table { width: 100%; border-collapse: collapse; min-width: 960px; }
+    .monday-table th { background: #f5f0e6; color: #57534e; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.3px; padding: 8px 10px; border-bottom: 1px solid #e4dccd; border-right: 1px solid #ece5d8; }
+    .monday-table td { padding: 0; border-bottom: 1px solid #ece5d8; border-right: 1px solid #ece5d8; font-size: 0.83rem; color: #18181b; height: 42px; }
     .monday-table tr:hover td { background: #faf6ef; }
     .monday-cell-pad { padding: 7px 10px; }
-    .monday-item-link {
-      font-weight: 800;
-      color: #18181b;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      padding: 7px 10px;
-    }
+    .monday-item-link { font-weight: 800; color: #18181b; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 7px 10px; }
     .monday-item-link:hover { color: #2563eb; text-decoration: underline; }
 
-    /* Células de Status Coloridas estilo Monday */
     .monday-status-cell {
       width: 100%;
-      height: 40px;
+      height: 42px;
       border: none;
       font-weight: 800;
       font-size: 0.78rem;
@@ -683,17 +668,8 @@
     .temp-bg-MORNO { background: #f59e0b; color: #18181b; }
     .temp-bg-FRIO { background: #64748b; color: #fff; }
 
-    .badge-atraso-sla {
-      background: #fee2e2;
-      color: #b91c1c;
-      border: 1px solid #fca5a5;
-      font-size: 0.69rem;
-      font-weight: 800;
-      padding: 2px 7px;
-      border-radius: 999px;
-      white-space: nowrap;
-      display: inline-block;
-    }
+    .badge-atraso-sla { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; font-size: 0.69rem; font-weight: 800; padding: 2px 7px; border-radius: 999px; white-space: nowrap; display: inline-block; }
+    .badge-og1-num { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; font-size: 0.7rem; font-weight: 800; padding: 2px 6px; border-radius: 6px; }
 
     .monday-group-footer {
       background: #f8f4ec;
@@ -707,46 +683,14 @@
     }
 
     /* KANBAN */
-    .kanban-board {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(230px, 1fr));
-      gap: 12px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-    }
-    .kanban-col {
-      background: #efe9de;
-      border: 1px solid #e3dacb;
-      border-radius: 18px;
-      padding: 12px;
-      min-height: 430px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .kanban-col.drag-over {
-      background: #e5decb;
-      border: 2px dashed #18181b;
-    }
-    .kanban-col-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #dfd6c7;
-    }
+    .kanban-board { display: grid; grid-template-columns: repeat(5, minmax(230px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+    .kanban-col { background: #efe9de; border: 1px solid #e3dacb; border-radius: 18px; padding: 12px; min-height: 430px; display: flex; flex-direction: column; gap: 10px; }
+    .kanban-col.drag-over { background: #e5decb; border: 2px dashed #18181b; }
+    .kanban-col-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid #dfd6c7; }
     .kanban-col-title { font-weight: 800; font-size: 0.86rem; color: #18181b; display: flex; align-items: center; gap: 6px; }
     .kanban-col-sum { font-size: 0.76rem; font-weight: 700; color: #57534e; }
     .kanban-cards { display: flex; flex-direction: column; gap: 9px; flex: 1; }
-    .kanban-card {
-      background: #fffdf9;
-      border: 1px solid #e5ddd0;
-      border-radius: 14px;
-      padding: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-      cursor: grab;
-      transition: transform 0.12s ease, box-shadow 0.12s ease;
-    }
+    .kanban-card { background: #fffdf9; border: 1px solid #e5ddd0; border-radius: 14px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); cursor: grab; transition: transform 0.12s ease, box-shadow 0.12s ease; }
     .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.07); }
     .kcard-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 6px; }
     .kcard-cat { font-size: 0.7rem; font-weight: 800; background: #f2ece1; color: #44403c; padding: 2px 8px; border-radius: 999px; }
@@ -756,26 +700,13 @@
     .kcard-val { font-weight: 900; font-size: 1rem; color: #15803d; margin-bottom: 4px; }
     .kcard-meta { font-size: 0.74rem; color: #78716c; margin-bottom: 8px; }
     .kcard-actions { display: flex; gap: 5px; flex-wrap: wrap; border-top: 1px solid #f0e9dd; padding-top: 8px; }
-    .kcard-btn {
-      border: none;
-      border-radius: 8px;
-      padding: 5px 8px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      cursor: pointer;
-      min-height: 26px;
-    }
+    .kcard-btn { border: none; border-radius: 8px; padding: 5px 8px; font-size: 0.72rem; font-weight: 700; cursor: pointer; min-height: 26px; }
     .kcard-btn-wpp { background: #dcfce7; color: #166534; }
     .kcard-btn-move { background: #f2ece1; color: #18181b; }
     .kcard-btn-del { background: #fee2e2; color: #991b1b; }
 
-    .crm-panel-card {
-      background: #fffdf9;
-      border: 1px solid #e6dfd3;
-      border-radius: 18px;
-      padding: 18px;
-    }
-    .crm-table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    .crm-panel-card { background: #fffdf9; border: 1px solid #e6dfd3; border-radius: 18px; padding: 18px; }
+    .crm-table { width: 100%; border-collapse: collapse; min-width: 600px; }
     .crm-table th { background: #f2ece1; color: #44403c; border: 1px solid #e4dccd; font-size: 0.78rem; padding: 8px 10px; }
     .crm-table td { border: 1px solid #ece5d8; color: #18181b; font-size: 0.83rem; padding: 8px 10px; }
     .status-recencia { font-size: 0.71rem; font-weight: 800; padding: 3px 9px; border-radius: 999px; display: inline-block; white-space: nowrap; }
@@ -788,7 +719,7 @@
     .abc-B { background: #dbeafe; color: #1e40af; }
     .abc-C { background: #f3f4f6; color: #4b5563; }
 
-    /* PAINEL LATERAL ESTILO MONDAY (TIMELINE & NOTAS DO NEGÓCIO) */
+    /* PAINEL LATERAL ESTILO MONDAY (TIMELINE + HISTÓRICO DE TAREFAS) */
     .monday-drawer-backdrop {
       display: none;
       position: fixed;
@@ -800,44 +731,21 @@
     .monday-drawer-backdrop.open { display: flex; }
     .monday-drawer {
       width: 100%;
-      max-width: 480px;
+      max-width: 500px;
       height: 100%;
       background: #fffdf9;
       border-left: 1px solid #e6dfd3;
       padding: 22px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 13px;
       overflow-y: auto;
       box-shadow: -10px 0 35px rgba(0,0,0,0.18);
     }
-    .timeline-feed {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex: 1;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-    .timeline-item {
-      background: #f5f0e6;
-      border: 1px solid #e4dccd;
-      border-radius: 12px;
-      padding: 10px 12px;
-    }
-    .timeline-meta {
-      font-size: 0.73rem;
-      font-weight: 800;
-      color: #57534e;
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 4px;
-    }
-    .timeline-text {
-      font-size: 0.86rem;
-      color: #18181b;
-      line-height: 1.4;
-    }
+    .timeline-feed { display: flex; flex-direction: column; gap: 9px; flex: 1; overflow-y: auto; padding-right: 4px; }
+    .timeline-item { background: #f5f0e6; border: 1px solid #e4dccd; border-radius: 12px; padding: 9px 12px; }
+    .timeline-meta { font-size: 0.72rem; font-weight: 800; color: #57534e; display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .timeline-text { font-size: 0.85rem; color: #18181b; line-height: 1.4; }
 
     /* MODAIS */
     .crm-modal-backdrop {
@@ -857,17 +765,14 @@
       border-radius: 22px;
       padding: 22px;
       width: 100%;
-      max-width: 520px;
+      max-width: 560px;
+      max-height: 92vh;
+      overflow-y: auto;
       box-shadow: 0 20px 50px rgba(0,0,0,0.25);
       color: #18181b;
     }
     .crm-modal h3 { margin: 0 0 6px 0; font-size: 1.2rem; font-weight: 800; }
-    .seller-choice-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 14px;
-    }
+    .seller-choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
     .seller-choice-btn {
       background: #f5f0e6;
       border: 2px solid #dfd6c7;
@@ -882,6 +787,18 @@
       gap: 10px;
     }
     .seller-choice-btn:hover { background: #18181b; color: #facc15; border-color: #18181b; }
+
+    .og1-dropzone {
+      border: 2px dashed #eab308;
+      background: #fefce8;
+      border-radius: 16px;
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      margin: 12px 0;
+      transition: background 0.15s;
+    }
+    .og1-dropzone:hover { background: #fef9c3; }
 
     @media (max-width: 1120px) {
       .crm-bi-grid { grid-template-columns: 1fr; }
@@ -938,7 +855,7 @@
 </head>
 <body>
 
-  <!-- ================= WORKSPACE 1: ROMANEIO DE ENTREGA (100% INTACTO) ================= -->
+  <!-- ================= WORKSPACE 1: ROMANEIO DE ENTREGA ================= -->
   <div id="romaneio-workspace" class="container">
     <div class="top-bar no-print">
       <div class="title-area">
@@ -946,12 +863,13 @@
         <div class="status-badges">
           <span id="badge-nuvem" class="badge badge-syncing">🔄 Conectando à nuvem...</span>
           <span id="badge-clientes-db" class="badge badge-syncing">👥 Base clientes...</span>
+          <span id="badge-vendedor-romaneio" class="badge badge-backup-ok" style="cursor:pointer;" onclick="abrirModalVendedor()" title="Clique para identificar quem está neste PC">👤 Vendedor: Todos</span>
           <span id="badge-salvo" class="badge badge-saved" style="display: none;">✓ Salvo</span>
           <span id="badge-backup" class="badge badge-backup-warn">Sem backup ainda</span>
         </div>
       </div>
       <div class="top-actions">
-        <button type="button" id="btn-abrir-crm" class="btn-crm-open" title="Abrir CRM Comercial & Quadros Monday">📊 Abrir CRM</button>
+        <button type="button" id="btn-abrir-crm" class="btn-crm-open" title="Abrir CRM Comercial, Tarefas e Importador OG1">📊 Abrir CRM</button>
         <button type="button" id="btn-instalar-pwa" class="success" style="display: none;">📲 Instalar App</button>
         <button type="button" id="btn-sincronizar" class="secondary" title="Buscar atualizações do banco na nuvem">🔄 Atualizar Nuvem</button>
         <button type="button" id="btn-tema" class="secondary" title="Alternar modo claro/escuro">🌙 Modo Escuro</button>
@@ -1055,7 +973,7 @@
       </div>
     </section>
 
-    <!-- ABA 2: TURNOS (MANHÃ / TARDE) -->
+    <!-- ABA 2: TURNOS -->
     <section id="tab-turnos" class="tab-panel">
       <div class="form-grid">
         <div class="field">
@@ -1305,7 +1223,7 @@
     </section>
   </div>
 
-  <!-- ================= WORKSPACE 2: CRM COMERCIAL (VÉRTICE + MONDAY CRM) ================= -->
+  <!-- ================= WORKSPACE 2: CRM COMERCIAL (VÉRTICE + MONDAY + OG1 PDF + TAREFAS) ================= -->
   <div id="crm-workspace">
     <aside class="crm-sidebar">
       <div>
@@ -1314,7 +1232,7 @@
             <div class="crm-logo-badge">AF</div>
             <div>
               <div class="crm-brand-title">Aço Forte</div>
-              <div class="crm-brand-sub">CRM • Quadros & BI</div>
+              <div class="crm-brand-sub">CRM • OG1 & Inteligência</div>
             </div>
           </div>
           <span id="crm-sync-dot" title="Status Supabase" style="font-size:0.75rem;font-weight:800;color:#15803d;">● Online</span>
@@ -1322,7 +1240,7 @@
 
         <div class="crm-search-box">
           <span class="crm-search-icon">🔍</span>
-          <input type="text" id="crm-global-search" placeholder="Buscar negócio, contato..." autocomplete="off" />
+          <input type="text" id="crm-global-search" placeholder="Buscar cliente, OG1, categ..." autocomplete="off" />
           <span class="crm-kbd-hint">Ctrl K</span>
         </div>
 
@@ -1333,8 +1251,8 @@
 
           <div class="crm-negocios-group">
             <button type="button" class="crm-nav-btn" data-crm-view="negocios">
-              <span class="crm-nav-left"><span class="crm-nav-icon">💼</span> Negócios (Monday)</span>
-              <span id="crm-badge-atrasados" class="crm-pill-count" style="background:#fee2e2;color:#b91c1c;display:none;">0 ⏰</span>
+              <span class="crm-nav-left"><span class="crm-nav-icon">💼</span> Negócios</span>
+              <span id="crm-badge-sem-acao" class="crm-pill-count" style="background:#fee2e2;color:#b91c1c;display:none;">0 ⚠️</span>
             </button>
             <div class="crm-subnav">
               <button type="button" class="crm-sub-item" data-crm-stage="NEGOCIACAO">
@@ -1366,19 +1284,19 @@
           </button>
 
           <button type="button" class="crm-nav-btn" data-crm-view="propostas">
-            <span class="crm-nav-left"><span class="crm-nav-icon">⏰</span> Radar Follow-up</span>
+            <span class="crm-nav-left"><span class="crm-nav-icon">⏰</span> Agenda & Follow-up</span>
             <span id="crm-count-propostas" class="crm-pill-count">0 abertas</span>
           </button>
         </nav>
       </div>
 
       <div class="crm-sidebar-footer">
-        <div class="crm-seller-card" onclick="abrirModalVendedor()" title="Clique para trocar o vendedor deste computador">
+        <div class="crm-seller-card" onclick="abrirModalVendedor()" title="Clique para trocar o vendedor deste PC">
           <div class="crm-seller-info">
-            <div id="crm-seller-avatar" class="crm-avatar">EW</div>
+            <div id="crm-seller-avatar" class="crm-avatar">TD</div>
             <div>
-              <div id="crm-seller-name" class="crm-seller-name">Ewerton</div>
-              <div class="crm-seller-role">Comercial • Aço Forte JP</div>
+              <div id="crm-seller-name" class="crm-seller-name">Toda a Loja</div>
+              <div class="crm-seller-role">Modo Visualização (Sem Senha)</div>
             </div>
           </div>
           <span style="font-size:0.75rem;color:#78716c;font-weight:700;">Trocar</span>
@@ -1392,36 +1310,52 @@
 
     <!-- CONTEÚDO PRINCIPAL DO CRM -->
     <main class="crm-main">
+      <!-- BARRA RÁPIDA DE PERFIL DO VENDEDOR (SEM SENHA, 1 CLIQUE) -->
+      <div class="seller-quick-bar">
+        <div class="seller-pills-group">
+          <span style="font-size:0.78rem;font-weight:800;color:#57534e;margin-right:4px;">👤 Visão do Vendedor:</span>
+          <button type="button" class="seller-pill-btn active" data-seller-pill="TODOS" onclick="selecionarVendedorAtivo('TODOS')">👥 Todos (Loja)</button>
+          <button type="button" class="seller-pill-btn" data-seller-pill="Ewerton" onclick="selecionarVendedorAtivo('Ewerton')">Ewerton</button>
+          <button type="button" class="seller-pill-btn" data-seller-pill="Alexandre" onclick="selecionarVendedorAtivo('Alexandre')">Alexandre</button>
+          <button type="button" class="seller-pill-btn" data-seller-pill="Paulo" onclick="selecionarVendedorAtivo('Paulo')">Paulo</button>
+          <button type="button" class="seller-pill-btn" data-seller-pill="Yan" onclick="selecionarVendedorAtivo('Yan')">Yan</button>
+        </div>
+        <span id="seller-mode-hint" style="font-size:0.76rem;font-weight:700;color:#44403c;">Exibindo todos os vendedores da loja</span>
+      </div>
+
       <div class="crm-topbar">
         <div class="crm-page-title">
           <h2 id="crm-view-title">Visão Geral Comercial</h2>
-          <p id="crm-view-subtitle">Meta mensal, Curva ABC, Ticket Médio, Frequência e entregas integradas</p>
+          <p id="crm-view-subtitle">Tarefas de hoje, importação de PDF OG1, ranking de categorias e faturamento sem duplicidade</p>
         </div>
 
         <div class="crm-topbar-controls">
-          <select id="crm-filtro-vendedor" class="crm-select-pill" aria-label="Filtrar vendedor">
-            <option value="TODOS">👥 Toda a Loja (4 vendedores)</option>
-            <option value="Ewerton">👤 Ewerton</option>
-            <option value="Alexandre">👤 Alexandre</option>
-            <option value="Paulo">👤 Paulo</option>
-            <option value="Yan">👤 Yan</option>
-          </select>
+          <button type="button" class="crm-btn-og1" onclick="abrirModalImportarOG1()">📄 Importar PDF OG1</button>
           <button type="button" class="crm-btn-soft" onclick="sincronizarDadosCRM()">🔄 Sincronizar</button>
-          <button type="button" class="crm-btn-dark" onclick="abrirModalNovoNegocio()">+ Novo Negócio / Orçamento</button>
+          <button type="button" class="crm-btn-dark" onclick="abrirModalNovoNegocio()">+ Novo Negócio</button>
         </div>
+      </div>
+
+      <!-- CARD DE NOTIFICAÇÃO VISUAL: MINHAS TAREFAS DE HOJE & ATRASADAS -->
+      <div id="tarefas-hoje-container" class="tarefas-hoje-card" style="display:none;">
+        <div class="tarefas-hoje-header">
+          <strong id="tarefas-hoje-titulo" style="font-size:0.92rem;">⏰ Minhas Tarefas de Hoje & Atrasadas</strong>
+          <span id="tarefas-hoje-resumo" style="font-size:0.78rem;font-weight:700;color:#57534e;"></span>
+        </div>
+        <div id="tarefas-hoje-lista" class="tarefas-lista"></div>
       </div>
 
       <!-- BARRA BALCÃO EXPRESS -->
       <div class="balcao-express-card">
         <div class="balcao-express-header">
-          <div class="balcao-express-title">⚡ Balcão Express — Registrar Retira na Loja / Compra Rápida (sem sujar o romaneio)</div>
+          <div class="balcao-express-title">⚡ Balcão Express — Venda Rápida (Retira na Loja)</div>
           <div class="balcao-cat-pills" id="balcao-cat-pills">
-            <button type="button" class="cat-pill active" data-cat="AÇO / PERFIS">AÇO / PERFIS</button>
-            <button type="button" class="cat-pill" data-cat="TELHA">TELHA</button>
+            <button type="button" class="cat-pill active" data-cat="AÇO E PERFIS">AÇO E PERFIS</button>
+            <button type="button" class="cat-pill" data-cat="TELHAS">TELHAS</button>
             <button type="button" class="cat-pill" data-cat="FORRO PVC">FORRO PVC</button>
             <button type="button" class="cat-pill" data-cat="ALUMÍNIO">ALUMÍNIO</button>
             <button type="button" class="cat-pill" data-cat="FERRAGENS">FERRAGENS</button>
-            <button type="button" class="cat-pill" data-cat="POSTE ENERGISA">POSTE</button>
+            <button type="button" class="cat-pill" data-cat="POSTES ENERGISA">POSTES ENERGISA</button>
           </div>
         </div>
         <form id="form-balcao-express" class="balcao-express-grid">
@@ -1440,13 +1374,12 @@
         </form>
       </div>
 
-      <!-- VIEW 1: VISÃO GERAL (META MENSAL + KPIs + RANKING CLIENTES CURVA A + VENDEDORES) -->
+      <!-- VIEW 1: VISÃO GERAL (META + KPIs + RANKING CATEGORIAS + RANKING CLIENTES + VENDEDORES) -->
       <section id="crm-view-visao-geral" class="crm-view-section">
-        <!-- Barra de Meta Mensal estilo Monday -->
         <div class="meta-bar-card">
           <div class="meta-bar-top">
             <div>
-              <strong style="font-size:0.95rem;">🎯 Meta Mensal Consolidada (Romaneio + Balcão)</strong>
+              <strong style="font-size:0.93rem;">🎯 Meta Mensal Consolidada (Faturamento Único — Sem Duplicidade)</strong>
               <span id="meta-bar-detalhe" style="font-size:0.82rem;color:#57534e;margin-left:8px;">R$ 0,00 de R$ 150.000,00 (0%)</span>
             </div>
             <button type="button" class="crm-btn-soft" style="padding:4px 12px;min-height:28px;font-size:0.76rem;" onclick="editarMetaMensal()">✏️ Ajustar Meta</button>
@@ -1458,49 +1391,67 @@
 
         <div class="crm-kpi-grid">
           <div class="crm-kpi-card">
-            <div class="crm-kpi-label">Fechado Balcão / CRM (Mês)</div>
-            <div id="kpi-fechado-crm" class="crm-kpi-value">R$ 0,00</div>
-            <div id="kpi-fechado-crm-sub" class="crm-kpi-sub">0 vendas registradas</div>
-          </div>
-          <div class="crm-kpi-card">
-            <div class="crm-kpi-label">Entregas Romaneio (Mês)</div>
-            <div id="kpi-romaneio-mes" class="crm-kpi-value">R$ 0,00</div>
-            <div id="kpi-romaneio-mes-sub" class="crm-kpi-sub">0 entregas na expedição</div>
+            <div class="crm-kpi-label">Faturamento Único (Mês)</div>
+            <div id="kpi-faturamento-unico" class="crm-kpi-value">R$ 0,00</div>
+            <div id="kpi-faturamento-unico-sub" class="crm-kpi-sub">Balcão + Romaneio (sem dupla contagem)</div>
           </div>
           <div class="crm-kpi-card">
             <div class="crm-kpi-label">Ticket Médio Geral</div>
             <div id="kpi-ticket-medio" class="crm-kpi-value">R$ 0,00</div>
-            <div id="kpi-ticket-medio-sub" class="crm-kpi-sub">Média por pedido fechado</div>
+            <div id="kpi-ticket-medio-sub" class="crm-kpi-sub">Média por venda fechada</div>
           </div>
           <div class="crm-kpi-card">
-            <div class="crm-kpi-label">Orçamentos em Aberto</div>
-            <div id="kpi-aberto-crm" class="crm-kpi-value">R$ 0,00</div>
-            <div id="kpi-aberto-crm-sub" class="crm-kpi-sub">0 propostas aguardando retorno</div>
+            <div class="crm-kpi-label">Orçamentos Parados (+24h)</div>
+            <div id="kpi-orcamentos-parados" class="crm-kpi-value">0 • R$ 0</div>
+            <div id="kpi-orcamentos-parados-sub" class="crm-kpi-sub">Sem movimentação ou vencidos</div>
           </div>
           <div class="crm-kpi-card">
-            <div class="crm-kpi-label">Clientes Curva A / Inativos</div>
+            <div class="crm-kpi-label">Clientes Reativados</div>
+            <div id="kpi-clientes-reativados" class="crm-kpi-value">0</div>
+            <div id="kpi-clientes-reativados-sub" class="crm-kpi-sub">Inativos (+45d) que voltaram a comprar</div>
+          </div>
+          <div class="crm-kpi-card">
+            <div class="crm-kpi-label">Curva A / Inativos (+45d)</div>
             <div id="kpi-inativos-crm" class="crm-kpi-value">0 / 0</div>
-            <div id="kpi-curva-a-sub" class="crm-kpi-sub">Top 80% faturamento vs. +45d</div>
+            <div id="kpi-curva-a-sub" class="crm-kpi-sub">Top 80% receita vs. inativos</div>
           </div>
         </div>
 
         <div class="crm-bi-grid">
+          <!-- RANKING DE CATEGORIAS (AÇO, TELHAS, FORRO PVC, ALUMÍNIO, FERRAGENS, POSTES) -->
+          <div class="crm-panel-card">
+            <h3 style="margin:0 0 10px 0;font-size:1rem;">📦 Ranking de Receita por Categoria (Produtos)</h3>
+            <div class="table-wrapper">
+              <table class="crm-table" style="min-width:440px;">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Categoria</th>
+                    <th class="num">Vendas</th>
+                    <th class="num">Ticket Médio</th>
+                    <th class="num">Receita (R$)</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-ranking-categorias"></tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- RANKING TOP 10 CLIENTES -->
           <div class="crm-panel-card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
-              <h3 style="margin:0;font-size:1rem;">👑 Ranking Top 10 Clientes (Romaneio + Balcão)</h3>
-              <button type="button" class="crm-btn-soft" style="padding:5px 11px;min-height:28px;font-size:0.76rem;" onclick="ativarViewCRM('contatos')">Ver Curva ABC Completa →</button>
+              <h3 style="margin:0;font-size:1rem;">👑 Ranking Top 10 Clientes (Curva ABC)</h3>
+              <button type="button" class="crm-btn-soft" style="padding:5px 11px;min-height:28px;font-size:0.76rem;" onclick="ativarViewCRM('contatos')">Ver Todos →</button>
             </div>
             <div class="table-wrapper">
-              <table class="crm-table" style="min-width:560px;">
+              <table class="crm-table" style="min-width:520px;">
                 <thead>
                   <tr>
                     <th>#</th>
                     <th>Cliente</th>
                     <th>Curva</th>
-                    <th class="num">Compras</th>
-                    <th class="num">Ticket Médio</th>
-                    <th>Frequência</th>
+                    <th class="num">Ticket</th>
+                    <th>Freq.</th>
                     <th class="num">Total (R$)</th>
                   </tr>
                 </thead>
@@ -1508,29 +1459,30 @@
               </table>
             </div>
           </div>
+        </div>
 
-          <!-- DESEMPENHO POR VENDEDOR -->
-          <div class="crm-panel-card">
-            <h3 style="margin:0 0 10px 0;font-size:1rem;">🏆 Desempenho por Vendedor</h3>
-            <div class="table-wrapper">
-              <table class="crm-table" style="min-width:440px;">
-                <thead>
-                  <tr>
-                    <th>Vendedor</th>
-                    <th class="num">Abertos</th>
-                    <th class="num">Fechados</th>
-                    <th class="num">Total (R$)</th>
-                    <th class="num">Conv.</th>
-                  </tr>
-                </thead>
-                <tbody id="tbody-ranking-vendedores"></tbody>
-              </table>
-            </div>
+        <!-- DESEMPENHO POR VENDEDOR -->
+        <div class="crm-panel-card" style="margin-top:14px;">
+          <h3 style="margin:0 0 10px 0;font-size:1rem;">🏆 Desempenho Comercial por Vendedor</h3>
+          <div class="table-wrapper">
+            <table class="crm-table" style="min-width:540px;">
+              <thead>
+                <tr>
+                  <th>Vendedor</th>
+                  <th class="num">Orçamentos Abertos</th>
+                  <th class="num">Tarefas Pendentes</th>
+                  <th class="num">Vendas Fechadas</th>
+                  <th class="num">Faturamento (R$)</th>
+                  <th class="num">Conversão</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-ranking-vendedores"></tbody>
+            </table>
           </div>
         </div>
       </section>
 
-      <!-- VIEW 2: NEGÓCIOS (TABELA AGRUPADA MONDAY + QUADRO KANBAN) -->
+      <!-- VIEW 2: NEGÓCIOS (TABELA AGRUPADA MONDAY + KANBAN) -->
       <section id="crm-view-negocios" class="crm-view-section" style="display:none;">
         <div class="monday-toolbar">
           <div class="view-switcher">
@@ -1539,14 +1491,12 @@
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <span id="monday-sla-aviso" style="font-size:0.8rem;font-weight:700;color:#b91c1c;"></span>
-            <button type="button" class="crm-btn-soft" style="padding:5px 12px;min-height:30px;font-size:0.78rem;" onclick="abrirModalNovoNegocio()">+ Adicionar Item ao Quadro</button>
+            <button type="button" class="crm-btn-og1" style="padding:5px 12px;min-height:30px;font-size:0.78rem;" onclick="abrirModalImportarOG1()">📄 Importar PDF OG1</button>
           </div>
         </div>
 
-        <!-- SUB-VISÃO A: TABELA AGRUPADA ESTILO MONDAY -->
         <div id="monday-table-container"></div>
 
-        <!-- SUB-VISÃO B: KANBAN -->
         <div class="kanban-board" id="kanban-board" style="display:none;">
           <div class="kanban-col" data-stage="NEGOCIACAO" ondragover="permitirDropKanban(event)" ondragleave="sairDropKanban(event)" ondrop="soltarCardKanban(event, 'NEGOCIACAO')">
             <div class="kanban-col-header">
@@ -1590,13 +1540,14 @@
         </div>
       </section>
 
-      <!-- VIEW 3: CONTATOS, CURVA ABC, TICKET MÉDIO & FREQUÊNCIA -->
+      <!-- VIEW 3: CONTATOS & CURVA ABC -->
       <section id="crm-view-contatos" class="crm-view-section" style="display:none;">
         <div class="crm-panel-card">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
             <div style="display:flex;gap:8px;flex-wrap:wrap;" id="crm-contatos-filtros">
               <button type="button" class="crm-btn-soft active-filter" data-cfilter="COMPRADORES" onclick="filtrarStatusContatos('COMPRADORES', this)">Ranking Compradores</button>
               <button type="button" class="crm-btn-soft" data-cfilter="CURVA_A" onclick="filtrarStatusContatos('CURVA_A', this)">⭐ Só Curva A (Top 80%)</button>
+              <button type="button" class="crm-btn-soft" data-cfilter="REATIVADOS" onclick="filtrarStatusContatos('REATIVADOS', this)">🔄 Reativados</button>
               <button type="button" class="crm-btn-soft" data-cfilter="INATIVOS" onclick="filtrarStatusContatos('INATIVOS', this)">⚠️ Inativos (+45 dias)</button>
               <button type="button" class="crm-btn-soft" data-cfilter="TODOS" onclick="filtrarStatusContatos('TODOS', this)">Base Completa (5.139+)</button>
             </div>
@@ -1615,7 +1566,7 @@
                   <th class="num">Ticket Médio</th>
                   <th>Frequência</th>
                   <th class="num">Total Comprado</th>
-                  <th>Recência</th>
+                  <th>Status</th>
                   <th>Ação WhatsApp Desktop</th>
                 </tr>
               </thead>
@@ -1625,19 +1576,18 @@
         </div>
       </section>
 
-      <!-- VIEW 4: RADAR DE FOLLOW-UP (AUTOMÁTICO +3 DIAS) -->
+      <!-- VIEW 4: AGENDA DE TAREFAS & FOLLOW-UP -->
       <section id="crm-view-propostas" class="crm-view-section" style="display:none;">
         <div class="crm-panel-card">
-          <h3 style="margin:0 0 12px 0;font-size:1rem;">⏰ Radar de Follow-up & Orçamentos Abertos (Prioridade por Dias Parados)</h3>
+          <h3 style="margin:0 0 12px 0;font-size:1rem;">⏰ Agenda de Tarefas & Próximas Ações (Nenhum orçamento sem retorno)</h3>
           <div class="table-wrapper">
-            <table class="crm-table">
+            <table class="crm-table" style="min-width:860px;">
               <thead>
                 <tr>
-                  <th>Tempo Aberto</th>
+                  <th>Prazo / Horário</th>
                   <th>Vendedor</th>
-                  <th>Cliente</th>
-                  <th>Temperatura</th>
-                  <th>Etapa</th>
+                  <th>Cliente / OG1</th>
+                  <th>Próxima Ação</th>
                   <th class="num">Valor (R$)</th>
                   <th>Ações Rápidas</th>
                 </tr>
@@ -1650,7 +1600,7 @@
     </main>
   </div>
 
-  <!-- PAINEL LATERAL ESTILO MONDAY (TIMELINE & NOTAS DO ATENDIMENTO) -->
+  <!-- PAINEL LATERAL ESTILO MONDAY (TIMELINE + PRÓXIMA AÇÃO + HISTÓRICO DE TAREFAS) -->
   <div id="monday-drawer-backdrop" class="monday-drawer-backdrop" onclick="if(event.target===this) fecharDrawerNegocio()">
     <div class="monday-drawer">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;border-bottom:1px solid #e6dfd3;padding-bottom:12px;">
@@ -1662,18 +1612,30 @@
         <button type="button" class="crm-btn-soft" onclick="fecharDrawerNegocio()">✕</button>
       </div>
 
+      <!-- AGENDAR / ATUALIZAR PRÓXIMA AÇÃO -->
+      <form id="form-drawer-tarefa" style="background:#f5f0e6;border:1px solid #dfd6c7;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:0.82rem;font-weight:800;color:#18181b;">⏰ Próxima Ação / Lembrete de Retorno:</div>
+        <input type="text" id="drawer-tarefa-texto" placeholder="Ex.: Negociar valor do PVC / Cobrar orçamento" required style="font-size:0.86rem;background:#fff;" />
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;">
+          <input type="date" id="drawer-tarefa-data" required style="font-size:0.84rem;background:#fff;" />
+          <input type="time" id="drawer-tarefa-hora" value="09:00" required style="font-size:0.84rem;background:#fff;" />
+          <button type="submit" class="crm-btn-dark" style="padding:6px 12px;font-size:0.78rem;border-radius:8px;">Agendar</button>
+        </div>
+      </form>
+
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button type="button" id="drawer-btn-wpp" class="kcard-btn kcard-btn-wpp" style="padding:8px 12px;font-size:0.8rem;">💬 Chamar no WhatsApp</button>
-        <button type="button" id="drawer-btn-fechar" class="kcard-btn kcard-btn-move" style="padding:8px 12px;font-size:0.8rem;">✅ Marcar Fechado</button>
+        <button type="button" id="drawer-btn-concluir-tarefa" class="kcard-btn kcard-btn-move" style="padding:8px 12px;font-size:0.8rem;">✓ Concluir Tarefa Atual</button>
+        <button type="button" id="drawer-btn-fechar" class="kcard-btn kcard-btn-move" style="padding:8px 12px;font-size:0.8rem;background:#dbeafe;color:#1e40af;">🏆 Fechar Venda</button>
       </div>
 
       <form id="form-drawer-nota" style="display:flex;flex-direction:column;gap:8px;">
-        <label style="font-size:0.8rem;font-weight:800;">📝 Adicionar atualização na linha do tempo:</label>
-        <textarea id="drawer-nova-nota" rows="2" placeholder="Ex.: Cliente pediu prazo de 15 dias ou desconto no metalon..." required style="font-size:0.88rem;"></textarea>
-        <button type="submit" class="crm-btn-dark" style="align-self:flex-end;padding:7px 14px;font-size:0.8rem;">Publicar Nota</button>
+        <label style="font-size:0.8rem;font-weight:800;">📝 Adicionar nota na linha do tempo:</label>
+        <textarea id="drawer-nova-nota" rows="2" placeholder="Registre detalhes da negociação..." required style="font-size:0.86rem;"></textarea>
+        <button type="submit" class="crm-btn-soft" style="align-self:flex-end;padding:6px 12px;font-size:0.78rem;">Salvar Nota</button>
       </form>
 
-      <div style="font-size:0.8rem;font-weight:800;color:#57534e;margin-top:4px;">Histórico de Interações:</div>
+      <div style="font-size:0.8rem;font-weight:800;color:#57534e;">Histórico de Tarefas Realizadas & Notas:</div>
       <div id="drawer-timeline-feed" class="timeline-feed"></div>
     </div>
   </div>
@@ -1682,25 +1644,46 @@
   <div id="modal-vendedor" class="crm-modal-backdrop">
     <div class="crm-modal">
       <h3>Quem está atendendo neste computador?</h3>
-      <p style="font-size:0.85rem;color:#57534e;margin:0;">A escolha fica salva neste PC e identifica seus orçamentos e vendas automaticamente.</p>
+      <p style="font-size:0.85rem;color:#57534e;margin:0;">Sem senha: ao escolher seu nome, o sistema filtra automaticamente suas tarefas e orçamentos neste PC.</p>
       <div class="seller-choice-grid">
         <button type="button" class="seller-choice-btn" onclick="selecionarVendedorAtivo('Ewerton')"><span>EW</span> Ewerton</button>
         <button type="button" class="seller-choice-btn" onclick="selecionarVendedorAtivo('Alexandre')"><span>AL</span> Alexandre</button>
         <button type="button" class="seller-choice-btn" onclick="selecionarVendedorAtivo('Paulo')"><span>PA</span> Paulo</button>
         <button type="button" class="seller-choice-btn" onclick="selecionarVendedorAtivo('Yan')"><span>YN</span> Yan</button>
+        <button type="button" class="seller-choice-btn" style="grid-column:span 2;justify-content:center;" onclick="selecionarVendedorAtivo('TODOS')"><span>👥</span> Ver Toda a Loja (Gerencial)</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 2: NOVO NEGÓCIO / ORÇAMENTO -->
+  <!-- MODAL 2: IMPORTAR ORÇAMENTO PDF DO OG1 -->
+  <div id="modal-og1-pdf" class="crm-modal-backdrop">
+    <div class="crm-modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h3>📄 Importar Orçamento do OG1 (PDF)</h3>
+        <button type="button" class="crm-btn-soft" onclick="fecharModalImportarOG1()">✕</button>
+      </div>
+      <p style="font-size:0.83rem;color:#57534e;margin:0;">Selecione o PDF gerado pelo OG1. O sistema extrai automaticamente o número, vendedor, cliente, valor líquido, categoria e agenda o retorno para +24h (validade do orçamento).</p>
+
+      <div class="og1-dropzone" onclick="document.getElementById('input-pdf-og1').click()">
+        <div style="font-size:1.8rem;margin-bottom:6px;">📥</div>
+        <strong style="font-size:0.95rem;">Clique aqui para selecionar o PDF do OG1</strong>
+        <div style="font-size:0.78rem;color:#78716c;margin-top:4px;">Ex.: Orcamento_030441.pdf</div>
+        <input type="file" id="input-pdf-og1" accept="application/pdf" style="display:none;" />
+      </div>
+
+      <div id="og1-status-leitura" style="font-size:0.82rem;font-weight:700;color:#15803d;margin-bottom:8px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: NOVO NEGÓCIO / ORÇAMENTO (COM PRÓXIMA AÇÃO OBRIGATÓRIA) -->
   <div id="modal-novo-negocio" class="crm-modal-backdrop">
     <div class="crm-modal">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <h3>Novo Negócio / Orçamento</h3>
+        <h3 id="modal-nn-titulo">Novo Negócio / Orçamento</h3>
         <button type="button" class="crm-btn-soft" onclick="fecharModalNovoNegocio()">✕</button>
       </div>
       <form id="form-novo-negocio" style="display:flex;flex-direction:column;gap:10px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
           <div class="field">
             <label>Vendedor</label>
             <select id="nn-vendedor">
@@ -1711,7 +1694,11 @@
             </select>
           </div>
           <div class="field">
-            <label>Código do Cliente</label>
+            <label>Nº Orçamento OG1</label>
+            <input type="text" id="nn-og1" placeholder="Ex.: 030441" />
+          </div>
+          <div class="field">
+            <label>Cód. Cliente</label>
             <input type="text" id="nn-codigo" inputmode="numeric" placeholder="Ex.: 101132" />
           </div>
         </div>
@@ -1719,30 +1706,30 @@
           <label>Nome do Cliente *</label>
           <input type="text" id="nn-cliente" list="lista-clientes" placeholder="Digite o nome ou busque pelo código" required />
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div class="field">
             <label>WhatsApp (com DDD)</label>
             <input type="text" id="nn-telefone" placeholder="Ex.: 83999999999" />
           </div>
           <div class="field">
-            <label>Categoria</label>
+            <label>Categoria (Ranking)</label>
             <select id="nn-categoria">
-              <option value="AÇO / PERFIS">AÇO / PERFIS</option>
-              <option value="TELHA">TELHA</option>
+              <option value="AÇO E PERFIS">AÇO E PERFIS</option>
+              <option value="TELHAS">TELHAS</option>
               <option value="FORRO PVC">FORRO PVC</option>
               <option value="ALUMÍNIO">ALUMÍNIO</option>
               <option value="FERRAGENS">FERRAGENS</option>
-              <option value="POSTE ENERGISA">POSTE ENERGISA</option>
+              <option value="POSTES ENERGISA">POSTES ENERGISA</option>
             </select>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
           <div class="field">
-            <label>Valor (R$) *</label>
+            <label>Valor Líquido (R$) *</label>
             <input type="text" id="nn-valor" inputmode="numeric" placeholder="R$ 0,00" required />
           </div>
           <div class="field">
-            <label>Etapa Inicial</label>
+            <label>Etapa</label>
             <select id="nn-etapa">
               <option value="NEGOCIACAO">🟢 Negociação</option>
               <option value="PROPOSTA" selected>🟠 Proposta enviada</option>
@@ -1759,6 +1746,17 @@
             </select>
           </div>
         </div>
+
+        <!-- PRÓXIMA AÇÃO OBRIGATÓRIA -->
+        <div style="background:#fefce8;border:1px solid #fde047;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;">
+          <div style="font-size:0.78rem;font-weight:800;color:#854d0e;">⏰ Próxima Ação Obrigatória (para não esfriar o orçamento):</div>
+          <input type="text" id="nn-proxima-acao" placeholder="Ex.: Negociar valor do PVC / Retornar validade 24h" required style="font-size:0.86rem;background:#fff;" />
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <input type="date" id="nn-proxima-data" required style="font-size:0.84rem;background:#fff;" />
+            <input type="time" id="nn-proxima-hora" value="09:00" required style="font-size:0.84rem;background:#fff;" />
+          </div>
+        </div>
+
         <div class="field">
           <label>Tipo de Saída (se fechar)</label>
           <select id="nn-saida">
@@ -1767,8 +1765,8 @@
           </select>
         </div>
         <div class="field">
-          <label>Observação / Materiais cotados</label>
-          <input type="text" id="nn-obs" placeholder="Ex.: 20 barras metalon 30x20 + 10 telhas" />
+          <label>Observação / Materiais</label>
+          <input type="text" id="nn-obs" placeholder="Ex.: 2 barras lambri + metalon 20x20" />
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
           <button type="button" class="crm-btn-soft" onclick="fecharModalNovoNegocio()">Cancelar</button>
@@ -1779,6 +1777,11 @@
   </div>
 
   <script>
+    // Configurar Worker do PDF.js
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
     // ================= CONFIGURAÇÃO SUPABASE =================
     const SUPABASE_REST_URL = 'https://iqfcyxuhqnluucifylqn.supabase.co/rest/v1';
     const SUPABASE_API_KEY = 'sb_publishable_PSTBZr3SnTxlmCqxFth3Pw_3LLr38Gb';
@@ -1800,15 +1803,24 @@
     const META_CHANGES_COUNT = 'romaneio_changes_since_backup';
     const META_DARK_MODE = 'romaneio_dark_mode';
 
+    const CATEGORIAS_OFICIAIS = [
+      'AÇO E PERFIS',
+      'TELHAS',
+      'FORRO PVC',
+      'ALUMÍNIO',
+      'FERRAGENS',
+      'POSTES ENERGISA'
+    ];
+
     let db = null;
     let itensCache = [];
     let mapaClientes = {};
     let vendasCrmCache = [];
     let inlineEditId = null;
     let ultimoEstadoUndo = null;
-    let vendedorAtivo = localStorage.getItem(CACHE_VENDEDOR_KEY) || '';
+    let vendedorAtivo = localStorage.getItem(CACHE_VENDEDOR_KEY) || 'TODOS';
     let metaMensalLoja = Number(localStorage.getItem(CACHE_META_MENSAL_KEY) || 150000);
-    let categoriaBalcaoSelecionada = 'AÇO / PERFIS';
+    let categoriaBalcaoSelecionada = 'AÇO E PERFIS';
     let filtroStatusContatosAtual = 'COMPRADORES';
     let crmViewAtual = 'visao-geral';
     let subModoNegocios = 'TABELA';
@@ -1821,6 +1833,15 @@
       const ano = agora.getFullYear();
       const mes = String(agora.getMonth() + 1).padStart(2, '0');
       const dia = String(agora.getDate()).padStart(2, '0');
+      return `${ano}-${mes}-${dia}`;
+    }
+
+    function obterDataAmanhaLocal() {
+      const amanha = new Date();
+      amanha.setDate(amanha.getDate() + 1);
+      const ano = amanha.getFullYear();
+      const mes = String(amanha.getMonth() + 1).padStart(2, '0');
+      const dia = String(amanha.getDate()).padStart(2, '0');
       return `${ano}-${mes}-${dia}`;
     }
 
@@ -1929,7 +1950,7 @@
     function salvarBaseClientesLocal() {
       try {
         localStorage.setItem(CACHE_CLIENTES_KEY, JSON.stringify(mapaClientes));
-      } catch { /* ignora limite storage */ }
+      } catch { /* ignora */ }
     }
 
     async function sincronizarBaseClientesNuvem() {
@@ -1987,9 +2008,10 @@
 
     async function salvarNovoClienteNoBanco(codigoInformado, nomeCliente, telefoneInformado = '') {
       const nomeLimpo = String(nomeCliente || '').trim().toUpperCase();
-      if (!nomeLimpo || nomeLimpo === 'BALCÃO AVULSO') return null;
+      if (!nomeLimpo || nomeLimpo === 'BALCÃO AVULSO' || nomeLimpo === 'CONSUMIDOR NAO IDENTIFICADO') return null;
 
       let codLimpo = String(codigoInformado || '').trim().replace(/\D/g, '');
+      if (codLimpo === '100001') codLimpo = '';
 
       if (codLimpo && mapaClientes[codLimpo]) {
         return mapaClientes[codLimpo];
@@ -2067,7 +2089,7 @@
               salvarBaseClientesLocal();
             }
           }
-        } catch { /* ignora se offline */ }
+        } catch { /* ignora */ }
       }
 
       if (encontrado && encontrado.nome) {
@@ -2164,12 +2186,17 @@
       return st === 'NÃO ENTREGUE' || st === 'FALTOU MATERIAL';
     }
 
-    function obterClasseLinhaStatus(status) {
+    function obterClasseLinhaStatus(status, observacao = '') {
       const st = normalizarStatusEntrega(status);
-      if (st === 'ENTREGUE') return 'row-entregue';
-      if (st === 'FALTOU MATERIAL') return 'row-faltou-material';
-      if (st === 'NÃO ENTREGUE') return 'row-nao-entregue';
-      return '';
+      let cls = '';
+      if (st === 'ENTREGUE') cls = 'row-entregue';
+      else if (st === 'FALTOU MATERIAL') cls = 'row-faltou-material';
+      else if (st === 'NÃO ENTREGUE') cls = 'row-nao-entregue';
+
+      if (vendedorAtivo && vendedorAtivo !== 'TODOS' && (observacao || '').toUpperCase().includes(`[CRM ${vendedorAtivo.toUpperCase()}]`)) {
+        cls += ' row-meu-pedido';
+      }
+      return cls.trim();
     }
 
     function renderBadgeTurno(turno) {
@@ -2287,7 +2314,7 @@
       if (!resp.ok) throw new Error(`Erro Supabase DELETE: ${resp.status}`);
     }
 
-    // ================= CAMADA INDEXEDDB (CACHE OFFLINE) =================
+    // ================= CAMADA INDEXEDDB =================
     function abrirBanco() {
       return new Promise((resolve, reject) => {
         const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -2350,6 +2377,7 @@
     async function inicializarDados() {
       carregarBaseClientesLocal();
       carregarCacheCrmLocal();
+      atualizarVisualVendedor();
       await abrirBanco();
       let dadosLocais = await lerTodosIndexedDB();
 
@@ -2362,7 +2390,7 @@
             await gravarTodosIndexedDB(dadosLocais);
           }
           localStorage.removeItem(LEGACY_STORAGE_KEY);
-        } catch { /* ignora erro legado */ }
+        } catch { /* ignora */ }
       }
 
       itensCache = dadosLocais;
@@ -2894,6 +2922,7 @@
         if (e.key === 'Escape') {
           fecharDrawerNegocio();
           fecharModalNovoNegocio();
+          fecharModalImportarOG1();
         }
         return;
       }
@@ -2983,7 +3012,7 @@
 
       document.getElementById('tbody-cadastro').innerHTML = itensCadastro.map(item => {
         const turnoAtual = normalizarTurno(item.turno);
-        const rowClass = obterClasseLinhaStatus(item.statusEntrega);
+        const rowClass = obterClasseLinhaStatus(item.statusEntrega, item.observacao);
 
         if (inlineEditId === item.id) {
           return `
@@ -3042,7 +3071,7 @@
         `✅ Entregues: ${qtdEntregues} | ⚠️ Faltou material: ${qtdFaltouMaterial} | ❌ Não entregues: ${qtdNaoEntregues} | ⏳ Pendentes: ${qtdPendentes}`;
       document.getElementById('total-cadastro').textContent = `Valor total: ${formatarMoeda(somaCad)}`;
 
-      // ABA 2: Turnos (Manhã / Tarde)
+      // ABA 2: Turnos
       const itensDiaTurnos = itensCache.filter(i => i.data === turnoAbaData.value);
       const motoristasTurnoAba = [...new Set(itensDiaTurnos.map(i => (i.motorista || '').toUpperCase()).filter(Boolean))];
       const motTurnoSel = turnoAbaMotorista.value;
@@ -3074,7 +3103,7 @@
       document.getElementById('tbody-turnos').innerHTML = itensTurnosFiltrados.map(item => {
         const tAtual = normalizarTurno(item.turno);
         const destino = tAtual === 'MANHÃ' ? 'TARDE' : 'MANHÃ';
-        const rowClass = obterClasseLinhaStatus(item.statusEntrega);
+        const rowClass = obterClasseLinhaStatus(item.statusEntrega, item.observacao);
 
         return `
           <tr id="row-turno-${item.id}" class="${rowClass}">
@@ -3176,7 +3205,7 @@
       }
     }
 
-    // ================= LÓGICA DO CRM COMERCIAL + RECURSOS MONDAY =================
+    // ================= LÓGICA DO CRM COMERCIAL + OG1 PDF + TAREFAS + BI =================
     function carregarCacheCrmLocal() {
       try {
         const raw = localStorage.getItem(CACHE_CRM_KEY);
@@ -3246,12 +3275,13 @@
     async function enviarVendaCrmParaRomaneio(registro) {
       if (registro.romaneio_id) return registro.romaneio_id;
       const novoRomaneioId = Date.now() + Math.floor(Math.random() * 999);
+      const refPedido = registro.orcamento_og1 ? `OG1-${registro.orcamento_og1}` : `CRM-${String(novoRomaneioId).slice(-5)}`;
       const novoPedidoRomaneio = {
         id: novoRomaneioId,
         data: registro.data || obterDataHojeLocal(),
         turno: obterTurnoAtualSugerido(),
         motorista: 'A DEFINIR',
-        pedido: `CRM-${String(novoRomaneioId).slice(-5)}`,
+        pedido: refPedido,
         cliente: String(registro.cliente || '').toUpperCase(),
         valor: Number(registro.valor || 0),
         observacao: `[CRM ${registro.vendedor.toUpperCase()}] ${(registro.categoria || '')} ${(registro.observacao || '')}`.trim().toUpperCase(),
@@ -3262,6 +3292,16 @@
       const novaListaRomaneio = [...itensCache, novoPedidoRomaneio];
       await persistirAlteracoes(novaListaRomaneio, false);
       return novoRomaneioId;
+    }
+
+    function normalizarCategoriaProduto(catRaw) {
+      const c = String(catRaw || '').toUpperCase();
+      if (c.includes('TELHA')) return 'TELHAS';
+      if (c.includes('PVC') || c.includes('FORRO')) return 'FORRO PVC';
+      if (c.includes('ALUM')) return 'ALUMÍNIO';
+      if (c.includes('POSTE') || c.includes('ENERGISA')) return 'POSTES ENERGISA';
+      if (c.includes('FERRAG') || c.includes('PARAF') || c.includes('DISCO') || c.includes('ELETRODO')) return 'FERRAGENS';
+      return 'AÇO E PERFIS';
     }
 
     function calcularDiasEmAberto(isoData) {
@@ -3286,9 +3326,6 @@
     document.getElementById('btn-abrir-crm').addEventListener('click', () => {
       document.body.classList.add('crm-mode');
       atualizarVisualVendedor();
-      if (!vendedorAtivo) {
-        abrirModalVendedor();
-      }
       renderizarCRM();
     });
 
@@ -3302,18 +3339,37 @@
     }
 
     function selecionarVendedorAtivo(nome) {
-      vendedorAtivo = nome;
-      localStorage.setItem(CACHE_VENDEDOR_KEY, nome);
+      vendedorAtivo = nome || 'TODOS';
+      localStorage.setItem(CACHE_VENDEDOR_KEY, vendedorAtivo);
       document.getElementById('modal-vendedor').classList.remove('open');
       atualizarVisualVendedor();
-      renderizarCRM();
+      renderizar();
+      if (document.body.classList.contains('crm-mode')) renderizarCRM();
     }
 
     function atualizarVisualVendedor() {
-      const nome = vendedorAtivo || 'Ewerton';
-      const iniciais = { Ewerton: 'EW', Alexandre: 'AL', Paulo: 'PA', Yan: 'YN' }[nome] || nome.slice(0, 2).toUpperCase();
-      document.getElementById('crm-seller-name').textContent = nome;
-      document.getElementById('crm-seller-avatar').textContent = iniciais;
+      const nome = vendedorAtivo || 'TODOS';
+      const labelExibicao = nome === 'TODOS' ? 'Toda a Loja' : nome;
+      const iniciais = nome === 'TODOS' ? 'TD' : ({ Ewerton: 'EW', Alexandre: 'AL', Paulo: 'PA', Yan: 'YN' }[nome] || nome.slice(0, 2).toUpperCase());
+
+      const sbName = document.getElementById('crm-seller-name');
+      const sbAvatar = document.getElementById('crm-seller-avatar');
+      if (sbName) sbName.textContent = labelExibicao;
+      if (sbAvatar) sbAvatar.textContent = iniciais;
+
+      const badgeRom = document.getElementById('badge-vendedor-romaneio');
+      if (badgeRom) badgeRom.textContent = `👤 Vendedor: ${labelExibicao}`;
+
+      document.querySelectorAll('.seller-pill-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.sellerPill === nome);
+      });
+
+      const hint = document.getElementById('seller-mode-hint');
+      if (hint) {
+        hint.textContent = nome === 'TODOS'
+          ? 'Exibindo todos os vendedores da loja (Visão Geral)'
+          : `Filtro ativo: mostrando apenas tarefas, orçamentos e vendas de ${nome}`;
+      }
     }
 
     function ativarViewCRM(viewName) {
@@ -3326,10 +3382,10 @@
       });
 
       const titulos = {
-        'visao-geral': ['Visão Geral Comercial', 'Meta mensal, Curva ABC, Ticket Médio, Frequência e entregas integradas'],
-        'negocios': ['Negócios — Quadros & Tabela Viva (Monday)', 'Clique nas etiquetas coloridas para mudar status ou clique no cliente para abrir a linha do tempo'],
-        'contatos': ['Carteira de Clientes & Curva ABC', 'Ranking consolidado (Romaneio + Balcão) com Ticket Médio, Frequência e Reativação'],
-        'propostas': ['Radar de Follow-up (+3 Dias Parados)', 'Orçamentos aguardando retorno ordenados por urgência']
+        'visao-geral': ['Visão Geral Comercial', 'Tarefas de hoje, importação de PDF OG1, ranking de categorias e faturamento sem duplicidade'],
+        'negocios': ['Negócios — Quadros & Tabela Viva', 'Clique nas etiquetas coloridas para mudar status ou clique no cliente para abrir tarefas e notas'],
+        'contatos': ['Carteira de Clientes & Curva ABC', 'Ranking consolidado com Ticket Médio, Frequência e Reativação de inativos'],
+        'propostas': ['Agenda de Tarefas & Próximas Ações', 'Controle de retornos agendados para nenhum orçamento esfriar']
       };
       const [t, sub] = titulos[viewName] || titulos['visao-geral'];
       document.getElementById('crm-view-title').textContent = t;
@@ -3356,12 +3412,9 @@
     });
 
     document.querySelectorAll('.crm-sub-item').forEach(btn => {
-      btn.addEventListener('click', () => {
-        ativarViewCRM('negocios');
-      });
+      btn.addEventListener('click', () => ativarViewCRM('negocios'));
     });
 
-    document.getElementById('crm-filtro-vendedor').addEventListener('change', renderizarCRM);
     document.getElementById('crm-global-search').addEventListener('input', () => {
       const termo = document.getElementById('crm-global-search').value.trim();
       if (termo && crmViewAtual === 'visao-geral') {
@@ -3371,7 +3424,99 @@
       }
     });
 
-    // Balcão Express
+    // ================= IMPORTADOR AUTOMÁTICO DE PDF DO OG1 =================
+    function abrirModalImportarOG1() {
+      document.getElementById('og1-status-leitura').textContent = '';
+      document.getElementById('input-pdf-og1').value = '';
+      document.getElementById('modal-og1-pdf').classList.add('open');
+    }
+
+    function fecharModalImportarOG1() {
+      document.getElementById('modal-og1-pdf').classList.remove('open');
+    }
+
+    function detectarCategoriaPorTextoOG1(textoUpper) {
+      if (textoUpper.includes('POSTE') || textoUpper.includes('ENERGISA')) return 'POSTES ENERGISA';
+      if (textoUpper.includes('FORRO PVC') || textoUpper.includes('LAMBRI PVC') || textoUpper.includes('RODAFORRO')) return 'FORRO PVC';
+      if (textoUpper.includes('TELHA')) return 'TELHAS';
+      if (textoUpper.includes('ALUMINIO') || textoUpper.includes('ALUMÍNIO')) return 'ALUMÍNIO';
+      if (textoUpper.includes('PARAFUSO') || textoUpper.includes('DISCO') || textoUpper.includes('ELETRODO') || textoUpper.includes('FECHADURA') || textoUpper.includes('DOBRADICA')) return 'FERRAGENS';
+      return 'AÇO E PERFIS';
+    }
+
+    document.getElementById('input-pdf-og1').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const statusEl = document.getElementById('og1-status-leitura');
+      statusEl.style.color = '#1e40af';
+      statusEl.textContent = '🔄 Lendo PDF do OG1...';
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let textoCompleto = '';
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const content = await page.getTextContent();
+          const strings = content.items.map(it => it.str);
+          textoCompleto += strings.join(' ') + '\n';
+        }
+
+        const upper = textoCompleto.toUpperCase();
+
+        // Extrair Nº Orçamento (Ex: Nº.: 030441)
+        const matchNum = upper.match(/N[º°]\.?:?\s*(\d{4,8})/);
+        const numOg1 = matchNum ? matchNum[1] : '';
+
+        // Extrair Cliente (Ex: CLIENTE......: 100001 CONSUMIDOR NAO IDENTIFICADO)
+        let codCliente = '';
+        let nomeCliente = '';
+        const matchCli = upper.match(/CLIENTE\.+:\s*(\d+)\s+([A-ZÀ-Ú0-9\s\-\.&\/]+?)(?=\s+N[º°]\.?:|\s+N\.\s*FANTASIA|\s+VALIDADE)/);
+        if (matchCli) {
+          codCliente = matchCli[1].trim();
+          nomeCliente = matchCli[2].trim();
+          if (codCliente === '100001' || nomeCliente.includes('CONSUMIDOR NAO IDENTIFICADO')) {
+            codCliente = '';
+            nomeCliente = '';
+          }
+        }
+
+        // Extrair Vendedor (Ex: VENDEDOR Ewerton)
+        let vendedorPdf = (vendedorAtivo && vendedorAtivo !== 'TODOS') ? vendedorAtivo : 'Ewerton';
+        if (upper.includes('EWERTON')) vendedorPdf = 'Ewerton';
+        else if (upper.includes('ALEXANDRE')) vendedorPdf = 'Alexandre';
+        else if (upper.includes('PAULO')) vendedorPdf = 'Paulo';
+        else if (upper.includes('YAN')) vendedorPdf = 'Yan';
+
+        // Extrair Total Líquido (Ex: TOTAL LIQUIDO ...............: 487,00)
+        const matchTotal = upper.match(/TOTAL\s+LIQUIDO\.+:\s*([\d\.,]+)/) || upper.match(/TOTAL\s+BRUTO\.+:\s*([\d\.,]+)/);
+        const valorLiquido = matchTotal ? extrairValorMonetario(matchTotal[1]) : 0;
+
+        // Extrair resumo dos itens
+        const itensMatches = [...upper.matchAll(/\d{8}\s+([A-Z0-9\s\.\(\)\/\-]+?)(?=\s+(?:PC|BR|MT|KG|UN|CX)\s+\d)/g)];
+        const resumoItens = itensMatches.slice(0, 3).map(m => m[1].trim()).join(' + ');
+
+        const categoriaDetectada = detectarCategoriaPorTextoOG1(upper);
+
+        fecharModalImportarOG1();
+        abrirModalNovoNegocio(nomeCliente, codCliente, '', {
+          og1: numOg1,
+          vendedor: vendedorPdf,
+          valor: valorLiquido,
+          categoria: categoriaDetectada,
+          obs: resumoItens ? `OG1 #${numOg1}: ${resumoItens}` : `ORÇAMENTO OG1 #${numOg1}`,
+          proximaAcao: `Cobrar retorno orçamento OG1 #${numOg1} (validade 24h)`
+        });
+      } catch (err) {
+        console.error('Erro ao ler PDF OG1:', err);
+        statusEl.style.color = '#dc2626';
+        statusEl.textContent = '❌ Não foi possível ler este PDF. Verifique se é um orçamento gerado pelo OG1.';
+      }
+    });
+
+    // ================= BALCÃO EXPRESS =================
     document.querySelectorAll('#balcao-cat-pills .cat-pill').forEach(pill => {
       pill.addEventListener('click', () => {
         document.querySelectorAll('#balcao-cat-pills .cat-pill').forEach(p => p.classList.remove('active'));
@@ -3404,13 +3549,14 @@
 
       if (!cliente || valor <= 0) return;
 
-      const vendedor = vendedorAtivo || 'Ewerton';
+      const vendedor = (vendedorAtivo && vendedorAtivo !== 'TODOS') ? vendedorAtivo : 'Ewerton';
       await salvarNovoClienteNoBanco(cod, cliente, telefone);
 
       const novoRegistro = {
         id: Date.now(),
         data: obterDataHojeLocal(),
         vendedor,
+        orcamento_og1: '',
         codigo_cliente: cod,
         cliente,
         telefone,
@@ -3421,7 +3567,11 @@
         motivo_perda: '',
         valor,
         observacao: 'LANÇAMENTO BALCÃO EXPRESS',
-        notas_timeline: [{ autor: vendedor, dataHora: `${formatarDataBR(obterDataHojeLocal())} ${obterHoraAtualBR().slice(0, 5)}`, texto: 'Venda registrada via Balcão Express.' }],
+        proxima_acao: '',
+        proxima_acao_data: '',
+        proxima_acao_hora: '',
+        notas_timeline: [{ autor: vendedor, dataHora: `${formatarDataBR(obterDataHojeLocal())} ${obterHoraAtualBR().slice(0, 5)}`, texto: 'Venda fechada no Balcão Express.' }],
+        historico_tarefas: [],
         romaneio_id: null
       };
 
@@ -3438,16 +3588,36 @@
       document.getElementById('bx-codigo').focus();
     });
 
-    // Modal Novo Negócio
-    function abrirModalNovoNegocio(clientePre = '', codigoPre = '', telefonePre = '') {
-      document.getElementById('nn-vendedor').value = vendedorAtivo || 'Ewerton';
+    // ================= MODAL NOVO NEGÓCIO =================
+    function abrirModalNovoNegocio(clientePre = '', codigoPre = '', telefonePre = '', dadosOG1 = null) {
+      const vendPadrao = dadosOG1?.vendedor || ((vendedorAtivo && vendedorAtivo !== 'TODOS') ? vendedorAtivo : 'Ewerton');
+      document.getElementById('nn-vendedor').value = vendPadrao;
+      document.getElementById('nn-og1').value = dadosOG1?.og1 || '';
       document.getElementById('nn-codigo').value = codigoPre;
       document.getElementById('nn-cliente').value = clientePre;
       document.getElementById('nn-telefone').value = telefonePre;
-      nnValor.value = '';
-      document.getElementById('nn-obs').value = '';
+      document.getElementById('nn-categoria').value = dadosOG1?.categoria || 'AÇO E PERFIS';
+
+      if (dadosOG1?.valor > 0) {
+        nnValor.value = formatarMoeda(dadosOG1.valor);
+      } else {
+        nnValor.value = '';
+      }
+
+      document.getElementById('nn-obs').value = dadosOG1?.obs || '';
+      document.getElementById('nn-proxima-acao').value = dadosOG1?.proximaAcao || 'Cobrar retorno do orçamento';
+      document.getElementById('nn-proxima-data').value = obterDataAmanhaLocal();
+      document.getElementById('nn-proxima-hora').value = '09:00';
+
+      document.getElementById('modal-nn-titulo').textContent = dadosOG1?.og1
+        ? `Orçamento Importado do OG1 (#${dadosOG1.og1})`
+        : 'Novo Negócio / Orçamento';
+
       document.getElementById('modal-novo-negocio').classList.add('open');
-      setTimeout(() => document.getElementById('nn-cliente').focus(), 50);
+      setTimeout(() => {
+        if (!clientePre) document.getElementById('nn-cliente').focus();
+        else document.getElementById('nn-proxima-acao').focus();
+      }, 50);
     }
 
     function fecharModalNovoNegocio() {
@@ -3466,6 +3636,7 @@
     document.getElementById('form-novo-negocio').addEventListener('submit', async e => {
       e.preventDefault();
       const vendedor = document.getElementById('nn-vendedor').value;
+      const og1 = document.getElementById('nn-og1').value.trim().toUpperCase();
       const cod = document.getElementById('nn-codigo').value.trim();
       const cliente = document.getElementById('nn-cliente').value.trim().toUpperCase();
       const telefone = document.getElementById('nn-telefone').value.trim();
@@ -3475,8 +3646,15 @@
       const temperatura = document.getElementById('nn-temperatura').value;
       const tipoSaida = document.getElementById('nn-saida').value;
       const obs = document.getElementById('nn-obs').value.trim().toUpperCase();
+      const proxAcao = document.getElementById('nn-proxima-acao').value.trim();
+      const proxData = document.getElementById('nn-proxima-data').value;
+      const proxHora = document.getElementById('nn-proxima-hora').value || '09:00';
 
       if (!cliente || valor <= 0) return;
+      if (etapa !== 'FECHAMENTO' && etapa !== 'PERDIDO' && !proxAcao) {
+        alert('Defina uma próxima ação para que este orçamento não esfrie.');
+        return;
+      }
 
       await salvarNovoClienteNoBanco(cod, cliente, telefone);
 
@@ -3484,6 +3662,7 @@
         id: Date.now(),
         data: obterDataHojeLocal(),
         vendedor,
+        orcamento_og1: og1,
         codigo_cliente: cod,
         cliente,
         telefone,
@@ -3494,7 +3673,11 @@
         motivo_perda: '',
         valor,
         observacao: obs,
+        proxima_acao: (etapa === 'FECHAMENTO' || etapa === 'PERDIDO') ? '' : proxAcao,
+        proxima_acao_data: (etapa === 'FECHAMENTO' || etapa === 'PERDIDO') ? '' : proxData,
+        proxima_acao_hora: (etapa === 'FECHAMENTO' || etapa === 'PERDIDO') ? '' : proxHora,
         notas_timeline: obs ? [{ autor: vendedor, dataHora: `${formatarDataBR(obterDataHojeLocal())} ${obterHoraAtualBR().slice(0, 5)}`, texto: obs }] : [],
+        historico_tarefas: [],
         romaneio_id: null
       };
 
@@ -3507,32 +3690,104 @@
       ativarViewCRM('negocios');
     });
 
-    // Alterar Temperatura (Célula colorida estilo Monday)
+    // ================= GESTÃO DE TAREFAS (CONCLUIR / REAGENDAR / AGENDAR) =================
+    async function concluirTarefaNegocio(id, pedirProxima = true) {
+      const item = vendasCrmCache.find(r => r.id === id);
+      if (!item) return;
+
+      const autor = (vendedorAtivo && vendedorAtivo !== 'TODOS') ? vendedorAtivo : (item.vendedor || 'Vendedor');
+      const agoraStr = `${formatarDataBR(obterDataHojeLocal())} ${obterHoraAtualBR().slice(0, 5)}`;
+      const tarefaConcluida = item.proxima_acao || 'Follow-up realizado';
+
+      const histTarefas = Array.isArray(item.historico_tarefas) ? item.historico_tarefas : [];
+      const notas = Array.isArray(item.notas_timeline) ? item.notas_timeline : [];
+
+      const novoHist = [{ autor, dataHora: agoraStr, acao: tarefaConcluida }, ...histTarefas];
+      const novasNotas = [{ autor, dataHora: agoraStr, texto: `✅ Tarefa concluída: "${tarefaConcluida}"` }, ...notas];
+
+      let novaProximaAcao = '';
+      let novaProximaData = '';
+      let novaProximaHora = '09:00';
+
+      if (pedirProxima && ['QUALIFICACAO', 'PROPOSTA', 'NEGOCIACAO'].includes(item.etapa_kanban)) {
+        const sugerida = prompt(
+          `Tarefa "${tarefaConcluida}" marcada como concluída!\n\nComo o orçamento continua aberto, qual é a PRÓXIMA AÇÃO para amanhã? (Deixe vazio apenas se for fechar agora):`,
+          `Retornar negociação com ${item.cliente}`
+        );
+        if (sugerida && sugerida.trim()) {
+          novaProximaAcao = sugerida.trim();
+          novaProximaData = obterDataAmanhaLocal();
+        }
+      }
+
+      const atualizado = {
+        ...item,
+        proxima_acao: novaProximaAcao,
+        proxima_acao_data: novaProximaData,
+        proxima_acao_hora: novaProximaData ? novaProximaHora : '',
+        historico_tarefas: novoHist,
+        notas_timeline: novasNotas
+      };
+
+      await salvarRegistroCrmNoBanco(atualizado);
+      if (drawerNegocioId === id) abrirDrawerNegocio(id);
+    }
+
+    async function reagendarTarefaAmanha(id) {
+      const item = vendasCrmCache.find(r => r.id === id);
+      if (!item) return;
+
+      const amanha = obterDataAmanhaLocal();
+      const autor = (vendedorAtivo && vendedorAtivo !== 'TODOS') ? vendedorAtivo : (item.vendedor || 'Vendedor');
+      const notas = Array.isArray(item.notas_timeline) ? item.notas_timeline : [];
+
+      const atualizado = {
+        ...item,
+        proxima_acao: item.proxima_acao || 'Retornar cotação',
+        proxima_acao_data: amanha,
+        proxima_acao_hora: item.proxima_acao_hora || '09:00',
+        notas_timeline: [{
+          autor,
+          dataHora: `${formatarDataBR(obterDataHojeLocal())} ${obterHoraAtualBR().slice(0, 5)}`,
+          texto: `🔁 Tarefa reagendada para ${formatarDataBR(amanha)} às ${item.proxima_acao_hora || '09:00'}.`
+        }, ...notas]
+      };
+
+      await salvarRegistroCrmNoBanco(atualizado);
+      if (drawerNegocioId === id) abrirDrawerNegocio(id);
+    }
+
     async function alterarTemperaturaNegocio(id, novaTemp) {
       const item = vendasCrmCache.find(r => r.id === id);
       if (!item) return;
       await salvarRegistroCrmNoBanco({ ...item, temperatura: novaTemp });
     }
 
-    // Drawer Lateral (Linha do Tempo & Notas estilo Monday)
+    // ================= DRAWER LATERAL (TIMELINE + AGENDAR TAREFA) =================
     function abrirDrawerNegocio(id) {
       const item = vendasCrmCache.find(r => r.id === id);
       if (!item) return;
       drawerNegocioId = id;
 
-      document.getElementById('drawer-cat-badge').textContent = `${item.categoria || 'GERAL'} • ${item.etapa_kanban}`;
+      const tagOg1 = item.orcamento_og1 ? ` • OG1 #${item.orcamento_og1}` : '';
+      document.getElementById('drawer-cat-badge').textContent = `${normalizarCategoriaProduto(item.categoria)} • ${item.etapa_kanban}${tagOg1}`;
       document.getElementById('drawer-cliente-nome').textContent = item.cliente;
       document.getElementById('drawer-meta-info').textContent = `Vendedor: ${item.vendedor} • Valor: ${formatarMoeda(item.valor)} • Data: ${formatarDataBR(item.data)}`;
 
-      const msgWpp = `Olá ${item.cliente}, aqui é ${item.vendedor} da Aço Forte! Passando para acompanhar seu orçamento de ${item.categoria || 'materiais'} (${formatarMoeda(item.valor)}).`;
+      document.getElementById('drawer-tarefa-texto').value = item.proxima_acao || '';
+      document.getElementById('drawer-tarefa-data').value = item.proxima_acao_data || obterDataAmanhaLocal();
+      document.getElementById('drawer-tarefa-hora').value = item.proxima_acao_hora || '09:00';
+
+      const msgWpp = `Olá ${item.cliente}, aqui é ${item.vendedor} da Aço Forte! Passando para acompanhar seu orçamento${tagOg1} de ${normalizarCategoriaProduto(item.categoria)} (${formatarMoeda(item.valor)}).`;
       document.getElementById('drawer-btn-wpp').onclick = () => abrirWhatsAppDesktop(item.telefone || '', item.cliente, msgWpp, 'FOLLOW-UP');
+      document.getElementById('drawer-btn-concluir-tarefa').onclick = () => concluirTarefaNegocio(item.id, true);
       document.getElementById('drawer-btn-fechar').onclick = () => moverEtapaKanban(item.id, 'FECHAMENTO');
 
       const notas = Array.isArray(item.notas_timeline) ? item.notas_timeline : [];
       const feed = document.getElementById('drawer-timeline-feed');
 
       if (!notas.length && !item.observacao) {
-        feed.innerHTML = `<div style="font-size:0.82rem;color:#78716c;text-align:center;padding:20px;">Nenhuma anotação registrada ainda. Escreva acima para registrar o histórico deste atendimento.</div>`;
+        feed.innerHTML = `<div style="font-size:0.82rem;color:#78716c;text-align:center;padding:20px;">Nenhuma anotação registrada ainda.</div>`;
       } else {
         const listaCombinada = [...notas];
         if (item.observacao && !listaCombinada.some(n => n.texto === item.observacao)) {
@@ -3557,6 +3812,36 @@
       document.getElementById('monday-drawer-backdrop').classList.remove('open');
     }
 
+    document.getElementById('form-drawer-tarefa').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!drawerNegocioId) return;
+      const item = vendasCrmCache.find(r => r.id === drawerNegocioId);
+      if (!item) return;
+
+      const texto = document.getElementById('drawer-tarefa-texto').value.trim();
+      const dataT = document.getElementById('drawer-tarefa-data').value;
+      const horaT = document.getElementById('drawer-tarefa-hora').value || '09:00';
+      if (!texto || !dataT) return;
+
+      const autor = (vendedorAtivo && vendedorAtivo !== 'TODOS') ? vendedorAtivo : (item.vendedor || 'Vendedor');
+      const notas = Array.isArray(item.notas_timeline) ? item.notas_timeline : [];
+
+      const atualizado = {
+        ...item,
+        proxima_acao: texto,
+        proxima_acao_data: dataT,
+        proxima_acao_hora: horaT,
+        notas_timeline: [{
+          autor,
+          dataHora: `${formatarDataBR(obterDataHojeLocal())} ${obterHoraAtualBR().slice(0, 5)}`,
+          texto: `⏰ Próxima ação agendada: "${texto}" para ${formatarDataBR(dataT)} às ${horaT}.`
+        }, ...notas]
+      };
+
+      await salvarRegistroCrmNoBanco(atualizado);
+      abrirDrawerNegocio(drawerNegocioId);
+    });
+
     document.getElementById('form-drawer-nota').addEventListener('submit', async e => {
       e.preventDefault();
       if (!drawerNegocioId) return;
@@ -3567,8 +3852,9 @@
       if (!item) return;
 
       const notasAtuais = Array.isArray(item.notas_timeline) ? item.notas_timeline : [];
+      const autor = (vendedorAtivo && vendedorAtivo !== 'TODOS') ? vendedorAtivo : 'Ewerton';
       const novaEntrada = {
-        autor: vendedorAtivo || 'Ewerton',
+        autor,
         dataHora: `${formatarDataBR(obterDataHojeLocal())} ${obterHoraAtualBR().slice(0, 5)}`,
         texto
       };
@@ -3583,7 +3869,7 @@
       abrirDrawerNegocio(drawerNegocioId);
     });
 
-    // Kanban Drag & Drop + Mudança de Etapa
+    // ================= KANBAN & MUDANÇA DE ETAPA =================
     function iniciarDragCard(event, id) {
       dragCardId = id;
       event.dataTransfer.effectAllowed = 'move';
@@ -3611,8 +3897,9 @@
       if (!item || item.etapa_kanban === novaEtapa) return;
 
       const notasAtuais = Array.isArray(item.notas_timeline) ? item.notas_timeline : [];
+      const autor = (vendedorAtivo && vendedorAtivo !== 'TODOS') ? vendedorAtivo : 'Sistema';
       const logAutomacao = {
-        autor: vendedorAtivo || 'Sistema',
+        autor,
         dataHora: `${formatarDataBR(obterDataHojeLocal())} ${obterHoraAtualBR().slice(0, 5)}`,
         texto: `Etapa alterada para ${novaEtapa}.`
       };
@@ -3627,15 +3914,21 @@
         const motivo = prompt('Motivo da perda (Ex.: Preço, Prazo, Estoque, Concorrência):', 'PREÇO');
         if (motivo === null) return;
         atualizado.motivo_perda = motivo.trim().toUpperCase();
+        atualizado.proxima_acao = '';
+        atualizado.proxima_acao_data = '';
       }
 
-      if (novaEtapa === 'FECHAMENTO' && !atualizado.romaneio_id) {
-        const enviarEntrega = confirm(`Negócio de "${atualizado.cliente}" fechado!\n\nClique em OK para enviar como ENTREGA LOJA no Romaneio, ou CANCELAR para registrar como RETIRA NO BALCÃO.`);
-        if (enviarEntrega) {
-          atualizado.tipo_saida = 'ENTREGA LOJA';
-          atualizado.romaneio_id = await enviarVendaCrmParaRomaneio(atualizado);
-        } else {
-          atualizado.tipo_saida = 'RETIRA BALCÃO';
+      if (novaEtapa === 'FECHAMENTO') {
+        atualizado.proxima_acao = '';
+        atualizado.proxima_acao_data = '';
+        if (!atualizado.romaneio_id) {
+          const enviarEntrega = confirm(`Negócio de "${atualizado.cliente}" fechado!\n\nClique em OK para enviar como ENTREGA LOJA no Romaneio, ou CANCELAR para registrar como RETIRA NO BALCÃO.`);
+          if (enviarEntrega) {
+            atualizado.tipo_saida = 'ENTREGA LOJA';
+            atualizado.romaneio_id = await enviarVendaCrmParaRomaneio(atualizado);
+          } else {
+            atualizado.tipo_saida = 'RETIRA BALCÃO';
+          }
         }
       }
 
@@ -3643,7 +3936,7 @@
       if (drawerNegocioId === id) abrirDrawerNegocio(id);
     }
 
-    // WhatsApp Desktop
+    // ================= WHATSAPP DESKTOP =================
     async function abrirWhatsAppDesktop(telefone, nomeCliente, mensagem, tipoAbordagem = 'ATENDIMENTO') {
       let telLimpo = String(telefone || '').replace(/\D/g, '');
       if (!telLimpo) {
@@ -3664,13 +3957,13 @@
           headers: headersSupabase({ 'Prefer': 'return=minimal' }),
           body: JSON.stringify([{
             id: Date.now(),
-            vendedor: vendedorAtivo || 'Ewerton',
+            vendedor: (vendedorAtivo && vendedorAtivo !== 'TODOS') ? vendedorAtivo : 'Ewerton',
             cliente: String(nomeCliente || '').toUpperCase(),
             tipo_abordagem: tipoAbordagem,
             resumo: mensagem.slice(0, 180)
           }])
         });
-      } catch { /* ignora se offline */ }
+      } catch { /* ignora */ }
     }
 
     function filtrarStatusContatos(status, btnEl) {
@@ -3682,7 +3975,7 @@
       renderizarCRM();
     }
 
-    // ================= CÁLCULO DE RANKING, CURVA ABC, TICKET MÉDIO E FREQUÊNCIA =================
+    // ================= CÁLCULOS CONSOLIDADOS (SEM DUPLICIDADE + CURVA ABC + REATIVADOS) =================
     function calcularBaseConsolidadaClientes() {
       const mapaConsolidado = {};
 
@@ -3695,49 +3988,36 @@
           ultimaCompra: '',
           primeiraCompra: '',
           totalComprado: 0,
-          qtdCompras: 0
+          qtdCompras: 0,
+          reativado: false
         };
       });
 
+      // 1. Entregas do Romaneio
       itensCache.forEach(r => {
         const nome = (r.cliente || '').toUpperCase().trim();
-        if (!nome || nome === 'BALCÃO AVULSO') return;
+        if (!nome || nome === 'BALCÃO AVULSO' || nome === 'CONSUMIDOR NAO IDENTIFICADO') return;
         if (!mapaConsolidado[nome]) {
-          mapaConsolidado[nome] = { codigo: '-', nome, telefone: '', datasCompras: [], ultimaCompra: '', primeiraCompra: '', totalComprado: 0, qtdCompras: 0 };
+          mapaConsolidado[nome] = { codigo: '-', nome, telefone: '', datasCompras: [], ultimaCompra: '', primeiraCompra: '', totalComprado: 0, qtdCompras: 0, reativado: false };
         }
         mapaConsolidado[nome].totalComprado += Number(r.valor || 0);
         mapaConsolidado[nome].qtdCompras += 1;
-        if (r.data) {
-          mapaConsolidado[nome].datasCompras.push(r.data);
-          if (!mapaConsolidado[nome].ultimaCompra || r.data > mapaConsolidado[nome].ultimaCompra) {
-            mapaConsolidado[nome].ultimaCompra = r.data;
-          }
-          if (!mapaConsolidado[nome].primeiraCompra || r.data < mapaConsolidado[nome].primeiraCompra) {
-            mapaConsolidado[nome].primeiraCompra = r.data;
-          }
-        }
+        if (r.data) mapaConsolidado[nome].datasCompras.push(r.data);
       });
 
+      // 2. Vendas CRM fechadas SEM romaneio_id (regra de faturamento único sem duplicidade)
       vendasCrmCache.filter(v => v.etapa_kanban === 'FECHAMENTO' && !v.romaneio_id).forEach(v => {
         const nome = (v.cliente || '').toUpperCase().trim();
-        if (!nome || nome === 'BALCÃO AVULSO') return;
+        if (!nome || nome === 'BALCÃO AVULSO' || nome === 'CONSUMIDOR NAO IDENTIFICADO') return;
         if (!mapaConsolidado[nome]) {
-          mapaConsolidado[nome] = { codigo: v.codigo_cliente || '-', nome, telefone: v.telefone || '', datasCompras: [], ultimaCompra: '', primeiraCompra: '', totalComprado: 0, qtdCompras: 0 };
+          mapaConsolidado[nome] = { codigo: v.codigo_cliente || '-', nome, telefone: v.telefone || '', datasCompras: [], ultimaCompra: '', primeiraCompra: '', totalComprado: 0, qtdCompras: 0, reativado: false };
         }
         if (v.telefone && !mapaConsolidado[nome].telefone) {
           mapaConsolidado[nome].telefone = v.telefone;
         }
         mapaConsolidado[nome].totalComprado += Number(v.valor || 0);
         mapaConsolidado[nome].qtdCompras += 1;
-        if (v.data) {
-          mapaConsolidado[nome].datasCompras.push(v.data);
-          if (!mapaConsolidado[nome].ultimaCompra || v.data > mapaConsolidado[nome].ultimaCompra) {
-            mapaConsolidado[nome].ultimaCompra = v.data;
-          }
-          if (!mapaConsolidado[nome].primeiraCompra || v.data < mapaConsolidado[nome].primeiraCompra) {
-            mapaConsolidado[nome].primeiraCompra = v.data;
-          }
-        }
+        if (v.data) mapaConsolidado[nome].datasCompras.push(v.data);
       });
 
       const listaOrdenada = Object.values(mapaConsolidado).sort((a, b) => b.totalComprado - a.totalComprado);
@@ -3748,15 +4028,28 @@
       let rankPosicao = 0;
 
       return listaOrdenada.map(c => {
-        const ticketMedio = c.qtdCompras > 0 ? (c.totalComprado / c.qtdCompras) : 0;
+        const datasOrdenadas = [...c.datasCompras].sort();
+        c.primeiraCompra = datasOrdenadas[0] || '';
+        c.ultimaCompra = datasOrdenadas[datasOrdenadas.length - 1] || '';
 
+        // Detecta Cliente Reativado: comprou recentemente (<= 30 dias), mas ficou > 45 dias parado entre a penúltima e a última compra
+        let reativado = false;
         let diasSemComprar = null;
+
         if (c.ultimaCompra) {
-          const dtMs = new Date(c.ultimaCompra + 'T12:00:00').getTime();
-          diasSemComprar = Math.max(0, Math.floor((hojeMs - dtMs) / (1000 * 60 * 60 * 24)));
+          const dtUltMs = new Date(c.ultimaCompra + 'T12:00:00').getTime();
+          diasSemComprar = Math.max(0, Math.floor((hojeMs - dtUltMs) / (1000 * 60 * 60 * 24)));
+
+          if (datasOrdenadas.length >= 2 && diasSemComprar <= 30) {
+            const penultima = datasOrdenadas[datasOrdenadas.length - 2];
+            const dtPenMs = new Date(penultima + 'T12:00:00').getTime();
+            const gapDias = Math.floor((dtUltMs - dtPenMs) / (1000 * 60 * 60 * 24));
+            if (gapDias >= 45) reativado = true;
+          }
         }
 
-        let frequenciaDias = null;
+        const ticketMedio = c.qtdCompras > 0 ? (c.totalComprado / c.qtdCompras) : 0;
+
         let textoFrequencia = 'Sem compra';
         if (c.qtdCompras === 1) {
           textoFrequencia = 'Compra única';
@@ -3764,8 +4057,8 @@
           const iniMs = new Date(c.primeiraCompra + 'T12:00:00').getTime();
           const fimMs = new Date(c.ultimaCompra + 'T12:00:00').getTime();
           const spanDias = Math.max(1, Math.round((fimMs - iniMs) / (1000 * 60 * 60 * 24)));
-          frequenciaDias = Math.max(1, Math.round(spanDias / (c.qtdCompras - 1)));
-          textoFrequencia = `A cada ${frequenciaDias}d`;
+          const freqDias = Math.max(1, Math.round(spanDias / (c.qtdCompras - 1)));
+          textoFrequencia = `A cada ${freqDias}d`;
         }
 
         let curvaABC = '-';
@@ -3783,23 +4076,25 @@
           rank: rankPosicao > 0 ? rankPosicao : null,
           ticketMedio,
           diasSemComprar,
-          frequenciaDias,
           textoFrequencia,
-          curvaABC
+          curvaABC,
+          reativado
         };
       });
     }
 
     function renderizarCRM() {
-      const vendedorFiltro = document.getElementById('crm-filtro-vendedor').value;
+      const vendedorFiltro = vendedorAtivo || 'TODOS';
       const buscaGlobal = document.getElementById('crm-global-search').value.trim().toUpperCase();
-      const prefixoMes = obterDataHojeLocal().slice(0, 7);
+      const hojeStr = obterDataHojeLocal();
+      const prefixoMes = hojeStr.slice(0, 7);
 
       const vendasFiltradas = vendasCrmCache.filter(v => {
         if (vendedorFiltro !== 'TODOS' && (v.vendedor || 'Ewerton') !== vendedorFiltro) return false;
         if (!buscaGlobal) return true;
         return (
           (v.cliente || '').toUpperCase().includes(buscaGlobal) ||
+          (v.orcamento_og1 || '').toUpperCase().includes(buscaGlobal) ||
           (v.categoria || '').toUpperCase().includes(buscaGlobal) ||
           (v.observacao || '').toUpperCase().includes(buscaGlobal) ||
           (v.codigo_cliente || '').includes(buscaGlobal)
@@ -3825,79 +4120,174 @@
       });
 
       const abertas = vendasFiltradas.filter(v => ['QUALIFICACAO', 'PROPOSTA', 'NEGOCIACAO'].includes(v.etapa_kanban));
-      const atrasadasSLA = abertas.filter(v => calcularDiasEmAberto(v.data) >= 3);
+      const semProximaAcao = abertas.filter(v => !v.proxima_acao || !v.proxima_acao_data);
 
       document.getElementById('crm-count-propostas').textContent = `${abertas.length} abertas`;
-      const badgeAtraso = document.getElementById('crm-badge-atrasados');
-      if (atrasadasSLA.length > 0) {
-        badgeAtraso.style.display = 'inline-block';
-        badgeAtraso.textContent = `${atrasadasSLA.length} ⏰`;
-        document.getElementById('monday-sla-aviso').textContent = `⚠️ Automação Monday: ${atrasadasSLA.length} orçamento(s) parado(s) há +3 dias!`;
+      const badgeSemAcao = document.getElementById('crm-badge-sem-acao');
+      if (semProximaAcao.length > 0) {
+        badgeSemAcao.style.display = 'inline-block';
+        badgeSemAcao.textContent = `${semProximaAcao.length} ⚠️`;
+        document.getElementById('monday-sla-aviso').textContent = `⚠️ Regra CRM: ${semProximaAcao.length} orçamento(s) aberto(s) sem próxima ação!`;
       } else {
-        badgeAtraso.style.display = 'none';
-        document.getElementById('monday-sla-aviso').textContent = '✓ Nenhum orçamento atrasado (+3d)';
+        badgeSemAcao.style.display = 'none';
+        document.getElementById('monday-sla-aviso').textContent = '✓ Todos os orçamentos abertos possuem próxima ação agendada';
       }
 
+      // ================= CARD NOTIFICAÇÃO: TAREFAS DE HOJE & ATRASADAS =================
+      const tarefasPendentes = abertas
+        .filter(v => v.proxima_acao && v.proxima_acao_data)
+        .sort((a, b) => `${a.proxima_acao_data} ${a.proxima_acao_hora || '09:00'}`.localeCompare(`${b.proxima_acao_data} ${b.proxima_acao_hora || '09:00'}`));
+
+      const tarefasUrgentes = tarefasPendentes.filter(v => v.proxima_acao_data <= hojeStr);
+      const tarefasContainer = document.getElementById('tarefas-hoje-container');
+
+      if (tarefasUrgentes.length > 0) {
+        const qtdAtrasadas = tarefasUrgentes.filter(v => v.proxima_acao_data < hojeStr).length;
+        tarefasContainer.style.display = 'block';
+        tarefasContainer.classList.toggle('tem-atraso', qtdAtrasadas > 0);
+        document.getElementById('tarefas-hoje-titulo').textContent =
+          vendedorFiltro === 'TODOS'
+            ? `⏰ Tarefas da Loja para Hoje & Atrasadas (${tarefasUrgentes.length})`
+            : `⏰ Minhas Tarefas de Hoje & Atrasadas — ${vendedorFiltro} (${tarefasUrgentes.length})`;
+        document.getElementById('tarefas-hoje-resumo').textContent =
+          qtdAtrasadas > 0 ? `🚨 ${qtdAtrasadas} atrasada(s) • ${tarefasUrgentes.length - qtdAtrasadas} para hoje` : `${tarefasUrgentes.length} retorno(s) agendado(s) para hoje`;
+
+        document.getElementById('tarefas-hoje-lista').innerHTML = tarefasUrgentes.slice(0, 6).map(t => {
+          const isAtrasada = t.proxima_acao_data < hojeStr;
+          const tagHtml = isAtrasada
+            ? `<span class="tarefa-tag-atraso">ATRASADA (${formatarDataBR(t.proxima_acao_data)})</span>`
+            : `<span class="tarefa-tag-hoje">HOJE às ${escaparHTML(t.proxima_acao_hora || '09:00')}</span>`;
+
+          return `
+            <div class="tarefa-item-box ${isAtrasada ? 'atrasada' : ''}">
+              <div class="tarefa-top-row">
+                <span>👤 ${escaparHTML(t.vendedor)} • ${escaparHTML(t.cliente)}</span>
+                ${tagHtml}
+              </div>
+              <div style="font-size:0.83rem;font-weight:800;color:#18181b;">📌 ${escaparHTML(t.proxima_acao)}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
+                <span style="font-size:0.76rem;font-weight:700;color:#15803d;">${formatarMoeda(t.valor)}${t.orcamento_og1 ? ' • OG1 #' + escaparHTML(t.orcamento_og1) : ''}</span>
+                <div style="display:flex;gap:4px;">
+                  <button type="button" class="kcard-btn kcard-btn-wpp" onclick="concluirTarefaNegocio(${t.id}, true)">✓ Concluir</button>
+                  <button type="button" class="kcard-btn kcard-btn-move" onclick="reagendarTarefaAmanha(${t.id})">🔁 Amanhã</button>
+                  <button type="button" class="kcard-btn kcard-btn-move" onclick="abrirDrawerNegocio(${t.id})">Abrir</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        tarefasContainer.style.display = 'none';
+      }
+
+      // ================= FATURAMENTO ÚNICO (SEM DUPLICIDADE) & KPIs =================
       const listaClientesConsolidada = calcularBaseConsolidadaClientes();
       document.getElementById('crm-count-contatos').textContent = String(listaClientesConsolidada.length);
 
-      // KPIs & Barra de Meta Mensal
-      const fechadasMes = vendasFiltradas.filter(v => v.etapa_kanban === 'FECHAMENTO' && (v.data || '').startsWith(prefixoMes));
-      const somaFechadasMes = fechadasMes.reduce((acc, i) => acc + Number(i.valor || 0), 0);
-      document.getElementById('kpi-fechado-crm').textContent = formatarMoeda(somaFechadasMes);
-      document.getElementById('kpi-fechado-crm-sub').textContent = `${fechadasMes.length} venda(s) no mês atual`;
-
-      const entregasMes = itensCache.filter(r => (r.data || '').startsWith(prefixoMes));
+      // Filtra romaneios do mês (e por vendedor se selecionado)
+      const entregasMes = itensCache.filter(r => {
+        if (!(r.data || '').startsWith(prefixoMes)) return false;
+        if (vendedorFiltro !== 'TODOS') {
+          return (r.observacao || '').toUpperCase().includes(`[CRM ${vendedorFiltro.toUpperCase()}]`);
+        }
+        return true;
+      });
       const somaEntregasMes = entregasMes.reduce((acc, i) => acc + Number(i.valor || 0), 0);
-      document.getElementById('kpi-romaneio-mes').textContent = formatarMoeda(somaEntregasMes);
-      document.getElementById('kpi-romaneio-mes-sub').textContent = `${entregasMes.length} entrega(s) na expedição`;
 
-      // Soma consolidada do mês (sem duplicar itens do CRM que viraram romaneio)
-      const fechadasSoBalcaoMes = fechadasMes.filter(v => !v.romaneio_id).reduce((acc, i) => acc + Number(i.valor || 0), 0);
-      const faturamentoMesConsolidado = somaEntregasMes + fechadasSoBalcaoMes;
-      const pctMeta = metaMensalLoja > 0 ? Math.min(100, Math.round((faturamentoMesConsolidado / metaMensalLoja) * 100)) : 0;
+      // Vendas CRM fechadas no mês SEM romaneio_id (evita somar 2x vendas que viraram entrega)
+      const fechadasMesSemRomaneio = vendasFiltradas.filter(v =>
+        v.etapa_kanban === 'FECHAMENTO' &&
+        (v.data || '').startsWith(prefixoMes) &&
+        !v.romaneio_id
+      );
+      const somaBalcaoMes = fechadasMesSemRomaneio.reduce((acc, i) => acc + Number(i.valor || 0), 0);
+
+      const faturamentoUnicoMes = somaEntregasMes + somaBalcaoMes;
+      const qtdPedidosUnicosMes = entregasMes.length + fechadasMesSemRomaneio.length;
+
+      document.getElementById('kpi-faturamento-unico').textContent = formatarMoeda(faturamentoUnicoMes);
+      document.getElementById('kpi-faturamento-unico-sub').textContent =
+        `Romaneio: ${formatarMoedaCurta(somaEntregasMes)} + Balcão: ${formatarMoedaCurta(somaBalcaoMes)}`;
+
+      const pctMeta = metaMensalLoja > 0 ? Math.min(100, Math.round((faturamentoUnicoMes / metaMensalLoja) * 100)) : 0;
       document.getElementById('meta-bar-detalhe').textContent =
-        `${formatarMoeda(faturamentoMesConsolidado)} de ${formatarMoeda(metaMensalLoja)} (${pctMeta}%)`;
+        `${formatarMoeda(faturamentoUnicoMes)} de ${formatarMoeda(metaMensalLoja)} (${pctMeta}%)`;
       document.getElementById('meta-progress-fill').style.width = `${pctMeta}%`;
 
-      // Ticket Médio Geral
-      const compradoresAtivos = listaClientesConsolidada.filter(c => c.qtdCompras > 0);
-      const totalPedidosGeral = compradoresAtivos.reduce((acc, c) => acc + c.qtdCompras, 0);
-      const somaGeral = compradoresAtivos.reduce((acc, c) => acc + c.totalComprado, 0);
-      const ticketMedioGeral = totalPedidosGeral > 0 ? (somaGeral / totalPedidosGeral) : 0;
-      document.getElementById('kpi-ticket-medio').textContent = formatarMoeda(ticketMedioGeral);
-      document.getElementById('kpi-ticket-medio-sub').textContent = `Baseado em ${totalPedidosGeral} pedido(s)`;
+      const ticketMedioMes = qtdPedidosUnicosMes > 0 ? (faturamentoUnicoMes / qtdPedidosUnicosMes) : 0;
+      document.getElementById('kpi-ticket-medio').textContent = formatarMoeda(ticketMedioMes);
+      document.getElementById('kpi-ticket-medio-sub').textContent = `${qtdPedidosUnicosMes} venda(s) únicas no mês`;
 
-      const somaAbertas = abertas.reduce((acc, i) => acc + Number(i.valor || 0), 0);
-      document.getElementById('kpi-aberto-crm').textContent = formatarMoeda(somaAbertas);
-      document.getElementById('kpi-aberto-crm-sub').textContent = `${abertas.length} proposta(s) em andamento`;
+      // Orçamentos Parados (+24h da emissão no OG1 ou vencidos)
+      const parados = abertas.filter(v => calcularDiasEmAberto(v.data) >= 1);
+      const somaParados = parados.reduce((acc, i) => acc + Number(i.valor || 0), 0);
+      document.getElementById('kpi-orcamentos-parados').textContent = `${parados.length} • ${formatarMoedaCurta(somaParados)}`;
+      document.getElementById('kpi-orcamentos-parados-sub').textContent = `Orçamentos com validade 24h expirada`;
+
+      // Clientes Reativados
+      const reativadosLista = listaClientesConsolidada.filter(c => c.reativado);
+      document.getElementById('kpi-clientes-reativados').textContent = String(reativadosLista.length);
+      document.getElementById('kpi-clientes-reativados-sub').textContent = `Voltaram a comprar após +45d`;
 
       const qtdCurvaA = listaClientesConsolidada.filter(c => c.curvaABC === 'A').length;
       const inativos = listaClientesConsolidada.filter(c => c.diasSemComprar !== null && c.diasSemComprar >= 45);
       document.getElementById('kpi-inativos-crm').textContent = `${qtdCurvaA} / ${inativos.length}`;
-      document.getElementById('kpi-curva-a-sub').textContent = `${qtdCurvaA} Curva A • ${inativos.length} inativos (+45d)`;
+      document.getElementById('kpi-curva-a-sub').textContent = `${qtdCurvaA} Curva A • ${inativos.length} inativos`;
+
+      // ================= RANKING DE CATEGORIAS (AÇO, TELHAS, PVC, ALUMÍNIO, FERRAGENS, POSTES) =================
+      const mapaCategorias = {};
+      CATEGORIAS_OFICIAIS.forEach(cat => {
+        mapaCategorias[cat] = { categoria: cat, qtd: 0, receita: 0 };
+      });
+
+      vendasFiltradas.filter(v => v.etapa_kanban === 'FECHAMENTO').forEach(v => {
+        const catNorm = normalizarCategoriaProduto(v.categoria);
+        if (!mapaCategorias[catNorm]) mapaCategorias[catNorm] = { categoria: catNorm, qtd: 0, receita: 0 };
+        mapaCategorias[catNorm].qtd += 1;
+        mapaCategorias[catNorm].receita += Number(v.valor || 0);
+      });
+
+      const rankingCategorias = Object.values(mapaCategorias).sort((a, b) => b.receita - a.receita);
+      const totalReceitaCategorias = rankingCategorias.reduce((acc, c) => acc + c.receita, 0);
+
+      document.getElementById('tbody-ranking-categorias').innerHTML = rankingCategorias.map((cat, idx) => {
+        const pct = totalReceitaCategorias > 0 ? Math.round((cat.receita / totalReceitaCategorias) * 100) : 0;
+        const ticketCat = cat.qtd > 0 ? (cat.receita / cat.qtd) : 0;
+        return `
+          <tr>
+            <td><strong>#${idx + 1}</strong></td>
+            <td>
+              <strong>${escaparHTML(cat.categoria)}</strong> <span style="font-size:0.72rem;color:#78716c;">(${pct}%)</span>
+              <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%;"></div></div>
+            </td>
+            <td class="num">${cat.qtd}</td>
+            <td class="num">${formatarMoeda(ticketCat)}</td>
+            <td class="num"><strong>${formatarMoeda(cat.receita)}</strong></td>
+          </tr>
+        `;
+      }).join('');
 
       // Ranking Top 10 Clientes
-      const top10Clientes = compradoresAtivos.slice(0, 10);
+      const top10Clientes = listaClientesConsolidada.filter(c => c.qtdCompras > 0).slice(0, 10);
       document.getElementById('tbody-ranking-clientes').innerHTML = top10Clientes.length
         ? top10Clientes.map(c => `
             <tr>
               <td><strong>#${c.rank}</strong></td>
               <td><strong>${escaparHTML(c.nome)}</strong></td>
               <td><span class="abc-badge abc-${c.curvaABC}">Classe ${c.curvaABC}</span></td>
-              <td class="num">${c.qtdCompras}</td>
               <td class="num">${formatarMoeda(c.ticketMedio)}</td>
               <td>${escaparHTML(c.textoFrequencia)}</td>
               <td class="num"><strong>${formatarMoeda(c.totalComprado)}</strong></td>
             </tr>
           `).join('')
-        : `<tr><td colspan="7" style="text-align:center;color:#78716c;">Nenhuma venda registrada ainda.</td></tr>`;
+        : `<tr><td colspan="6" style="text-align:center;color:#78716c;">Nenhuma venda registrada ainda.</td></tr>`;
 
       // Ranking Vendedores
       const vendedores = ['Ewerton', 'Alexandre', 'Paulo', 'Yan'];
       document.getElementById('tbody-ranking-vendedores').innerHTML = vendedores.map(vend => {
         const doVend = vendasCrmCache.filter(v => (v.vendedor || 'Ewerton') === vend);
         const ab = doVend.filter(v => ['QUALIFICACAO', 'PROPOSTA', 'NEGOCIACAO'].includes(v.etapa_kanban));
+        const tarefasVend = ab.filter(v => v.proxima_acao && v.proxima_acao_data && v.proxima_acao_data <= hojeStr);
         const fc = doVend.filter(v => v.etapa_kanban === 'FECHAMENTO');
         const somaFc = fc.reduce((acc, i) => acc + Number(i.valor || 0), 0);
         const conv = doVend.length ? Math.round((fc.length / doVend.length) * 100) : 0;
@@ -3906,6 +4296,7 @@
           <tr>
             <td><strong>${vend}</strong></td>
             <td class="num">${ab.length}</td>
+            <td class="num">${tarefasVend.length > 0 ? `<span class="badge-atraso-sla">${tarefasVend.length} hoje</span>` : '0'}</td>
             <td class="num">${fc.length}</td>
             <td class="num"><strong>${formatarMoeda(somaFc)}</strong></td>
             <td class="num">${conv}%</td>
@@ -3913,7 +4304,7 @@
         `;
       }).join('');
 
-      // ================= SUB-VISÃO A: TABELA AGRUPADA MONDAY =================
+      // ================= TABELA AGRUPADA MONDAY =================
       const mondayContainer = document.getElementById('monday-table-container');
       if (mondayContainer && subModoNegocios === 'TABELA') {
         mondayContainer.innerHTML = etapas.map(et => {
@@ -3923,25 +4314,32 @@
 
           const linhasHtml = itensGrupo.length
             ? itensGrupo.map(item => {
-                const diasAberto = calcularDiasEmAberto(item.data);
                 const isAberto = ['QUALIFICACAO', 'PROPOSTA', 'NEGOCIACAO'].includes(item.etapa_kanban);
-                const seloAtraso = (isAberto && diasAberto >= 3)
-                  ? `<span class="badge-atraso-sla">⏰ ${diasAberto}d parado</span>`
-                  : '';
+                const semAcao = isAberto && (!item.proxima_acao || !item.proxima_acao_data);
                 const tempAtual = (item.temperatura || 'MORNO').toUpperCase();
-                const qtdNotas = Array.isArray(item.notas_timeline) ? item.notas_timeline.length : 0;
-                const msgWpp = `Olá ${item.cliente}, aqui é ${item.vendedor} da Aço Forte! Passando para acompanhar seu orçamento de ${item.categoria || 'materiais'} no valor de ${formatarMoeda(item.valor)}.`;
+                const og1Badge = item.orcamento_og1 ? `<span class="badge-og1-num">OG1 #${escaparHTML(item.orcamento_og1)}</span>` : '';
+
+                const celulaProximaAcao = !isAberto
+                  ? `<span style="color:#78716c;font-size:0.76rem;">Encerrado</span>`
+                  : semAcao
+                    ? `<span class="badge-atraso-sla" style="cursor:pointer;" onclick="abrirDrawerNegocio(${item.id})">⚠️ Definir próxima ação</span>`
+                    : `<div style="font-size:0.77rem;line-height:1.25;cursor:pointer;" onclick="abrirDrawerNegocio(${item.id})">
+                         <strong>${escaparHTML(item.proxima_acao)}</strong><br/>
+                         <span style="color:${item.proxima_acao_data < hojeStr ? '#dc2626' : '#57534e'};font-weight:700;">${formatarDataBR(item.proxima_acao_data)} ${escaparHTML(item.proxima_acao_hora || '')}</span>
+                       </div>`;
+
+                const msgWpp = `Olá ${item.cliente}, aqui é ${item.vendedor} da Aço Forte! Passando para acompanhar seu orçamento${item.orcamento_og1 ? ' #' + item.orcamento_og1 : ''} de ${normalizarCategoriaProduto(item.categoria)} no valor de ${formatarMoeda(item.valor)}.`;
 
                 return `
                   <tr>
                     <td>
-                      <div class="monday-item-link" onclick="abrirDrawerNegocio(${item.id})" title="Abrir linha do tempo e anotações">
-                        <span>${escaparHTML(item.cliente)} ${seloAtraso}</span>
-                        <span style="font-size:0.72rem;color:#78716c;background:#f2ece1;padding:2px 7px;border-radius:999px;">💬 ${qtdNotas}</span>
+                      <div class="monday-item-link" onclick="abrirDrawerNegocio(${item.id})" title="Abrir linha do tempo e tarefas">
+                        <span>${escaparHTML(item.cliente)} ${og1Badge}</span>
                       </div>
                     </td>
                     <td><div class="monday-cell-pad"><strong>${escaparHTML(item.vendedor || 'Ewerton')}</strong></div></td>
-                    <td><div class="monday-cell-pad"><span class="kcard-cat">${escaparHTML(item.categoria || 'GERAL')}</span></div></td>
+                    <td><div class="monday-cell-pad"><span class="kcard-cat">${escaparHTML(normalizarCategoriaProduto(item.categoria))}</span></div></td>
+                    <td><div class="monday-cell-pad">${celulaProximaAcao}</div></td>
                     <td>
                       <select class="monday-status-cell st-bg-${item.etapa_kanban}" onchange="moverEtapaKanban(${item.id}, this.value)">
                         <option value="NEGOCIACAO" ${item.etapa_kanban === 'NEGOCIACAO' ? 'selected' : ''}>Negociação</option>
@@ -3959,10 +4357,10 @@
                       </select>
                     </td>
                     <td><div class="monday-cell-pad num"><strong>${formatarMoeda(item.valor)}</strong></div></td>
-                    <td><div class="monday-cell-pad">${formatarDataBR(item.data)}</div></td>
                     <td>
-                      <div class="monday-cell-pad" style="display:flex;gap:5px;">
-                        <button type="button" class="kcard-btn kcard-btn-wpp" onclick="abrirWhatsAppDesktop('${escaparHTML(item.telefone || '')}', '${escaparHTML(item.cliente)}', '${escaparHTML(msgWpp)}', 'FOLLOW-UP')">💬 Wpp</button>
+                      <div class="monday-cell-pad" style="display:flex;gap:4px;">
+                        <button type="button" class="kcard-btn kcard-btn-wpp" onclick="abrirWhatsAppDesktop('${escaparHTML(item.telefone || '')}', '${escaparHTML(item.cliente)}', '${escaparHTML(msgWpp)}', 'FOLLOW-UP')">💬</button>
+                        ${isAberto && !semAcao ? `<button type="button" class="kcard-btn kcard-btn-move" title="Concluir tarefa" onclick="concluirTarefaNegocio(${item.id}, true)">✓</button>` : ''}
                         <button type="button" class="kcard-btn kcard-btn-del" onclick="excluirRegistroCrm(${item.id})">✕</button>
                       </div>
                     </td>
@@ -3982,13 +4380,13 @@
                   <table class="monday-table">
                     <thead>
                       <tr>
-                        <th style="min-width:230px;">Cliente / Negócio (clique p/ notas)</th>
+                        <th style="min-width:210px;">Cliente / Orçamento OG1</th>
                         <th>Vendedor</th>
                         <th>Categoria</th>
-                        <th style="width:155px;text-align:center;">Etapa</th>
-                        <th style="width:125px;text-align:center;">Temperatura</th>
+                        <th style="min-width:190px;">Próxima Ação (Retorno)</th>
+                        <th style="width:145px;text-align:center;">Etapa</th>
+                        <th style="width:115px;text-align:center;">Temperatura</th>
                         <th class="num">Valor</th>
-                        <th>Data</th>
                         <th>Ações</th>
                       </tr>
                     </thead>
@@ -4005,7 +4403,7 @@
         }).join('');
       }
 
-      // ================= SUB-VISÃO B: QUADRO KANBAN =================
+      // ================= QUADRO KANBAN =================
       const proximaEtapaMap = {
         QUALIFICACAO: { dest: 'PROPOSTA', label: 'Proposta →' },
         PROPOSTA: { dest: 'NEGOCIACAO', label: 'Negociar →' },
@@ -4019,23 +4417,22 @@
 
         container.innerHTML = cards.map(card => {
           const prox = proximaEtapaMap[et.key];
-          const msgWpp = `Olá ${card.cliente}, aqui é ${card.vendedor} da Aço Forte! Passando para acompanhar seu orçamento de ${card.categoria || 'materiais'} no valor de ${formatarMoeda(card.valor)}. Podemos fechar o pedido?`;
-          const badgeSaida = card.etapa_kanban === 'FECHAMENTO'
-            ? `<div style="font-size:0.7rem;font-weight:700;color:${card.tipo_saida === 'ENTREGA LOJA' ? '#1d4ed8' : '#15803d'};margin-bottom:4px;">${card.tipo_saida === 'ENTREGA LOJA' ? '🚚 Entrega Romaneio' : '🛍️ Retira Balcão'}</div>`
+          const msgWpp = `Olá ${card.cliente}, aqui é ${card.vendedor} da Aço Forte! Passando para acompanhar seu orçamento de ${normalizarCategoriaProduto(card.categoria)} no valor de ${formatarMoeda(card.valor)}.`;
+          const acaoHtml = card.proxima_acao
+            ? `<div style="font-size:0.72rem;background:#fefce8;border:1px solid #fde047;padding:3px 7px;border-radius:6px;margin-bottom:6px;color:#854d0e;">⏰ ${escaparHTML(card.proxima_acao)} (${formatarDataBR(card.proxima_acao_data)})</div>`
             : '';
 
           return `
             <div class="kanban-card" draggable="true" ondragstart="iniciarDragCard(event, ${card.id})">
               <div class="kcard-top">
-                <span class="kcard-cat">${escaparHTML(card.categoria || 'GERAL')}</span>
+                <span class="kcard-cat">${escaparHTML(normalizarCategoriaProduto(card.categoria))}</span>
                 <span class="kcard-seller">${escaparHTML(card.vendedor || 'Ewerton')}</span>
               </div>
               <div class="kcard-client" onclick="abrirDrawerNegocio(${card.id})">${escaparHTML(card.cliente)}</div>
               <div class="kcard-val">${formatarMoeda(card.valor)}</div>
-              ${badgeSaida}
-              <div class="kcard-meta">${formatarDataBR(card.data)}${card.observacao ? ' • ' + escaparHTML(card.observacao) : ''}</div>
+              ${acaoHtml}
               <div class="kcard-actions">
-                <button type="button" class="kcard-btn kcard-btn-wpp" onclick="abrirWhatsAppDesktop('${escaparHTML(card.telefone || '')}', '${escaparHTML(card.cliente)}', '${escaparHTML(msgWpp)}', 'FOLLOW-UP')">💬 WhatsApp</button>
+                <button type="button" class="kcard-btn kcard-btn-wpp" onclick="abrirWhatsAppDesktop('${escaparHTML(card.telefone || '')}', '${escaparHTML(card.cliente)}', '${escaparHTML(msgWpp)}', 'FOLLOW-UP')">💬 Wpp</button>
                 ${prox ? `<button type="button" class="kcard-btn kcard-btn-move" onclick="moverEtapaKanban(${card.id}, '${prox.dest}')">${prox.label}</button>` : ''}
                 <button type="button" class="kcard-btn kcard-btn-del" onclick="excluirRegistroCrm(${card.id})">✕</button>
               </div>
@@ -4044,7 +4441,7 @@
         }).join('');
       });
 
-      // Renderizar Contatos, Curva ABC, Ticket Médio e Frequência
+      // ================= CONTATOS & CURVA ABC =================
       let contatosFiltrados = listaClientesConsolidada;
       if (buscaGlobal) {
         contatosFiltrados = contatosFiltrados.filter(c =>
@@ -4055,6 +4452,8 @@
         contatosFiltrados = contatosFiltrados.filter(c => c.qtdCompras > 0);
       } else if (filtroStatusContatosAtual === 'CURVA_A') {
         contatosFiltrados = contatosFiltrados.filter(c => c.curvaABC === 'A');
+      } else if (filtroStatusContatosAtual === 'REATIVADOS') {
+        contatosFiltrados = contatosFiltrados.filter(c => c.reativado);
       } else if (filtroStatusContatosAtual === 'INATIVOS') {
         contatosFiltrados = contatosFiltrados.filter(c => c.diasSemComprar !== null && c.diasSemComprar >= 45);
       }
@@ -4064,7 +4463,9 @@
 
       document.getElementById('tbody-crm-contatos').innerHTML = exibidos.map(c => {
         let badgeRec = `<span class="status-recencia" style="background:#f3f4f6;color:#4b5563;">Base Cadastrada</span>`;
-        if (c.diasSemComprar !== null) {
+        if (c.reativado) {
+          badgeRec = `<span class="status-recencia" style="background:#dbeafe;color:#1e40af;">🔄 Reativado (${c.diasSemComprar}d)</span>`;
+        } else if (c.diasSemComprar !== null) {
           if (c.diasSemComprar <= 30) {
             badgeRec = `<span class="status-recencia rec-ativo">Ativo (${c.diasSemComprar}d)</span>`;
           } else if (c.diasSemComprar < 45) {
@@ -4078,7 +4479,8 @@
           ? `<span class="abc-badge abc-${c.curvaABC}">Classe ${c.curvaABC}</span>`
           : `<span style="color:#a8a29e;">-</span>`;
 
-        const msgReativacao = `Olá ${c.nome}, tudo bem? Aqui é ${vendedorAtivo || 'Ewerton'} da Aço Forte! Estamos com reposição de aço, telhas, forro PVC e ferragens com condições especiais hoje. Precisando de cotação para sua obra ou serralheria, é só chamar por aqui!`;
+        const vendNome = (vendedorFiltro !== 'TODOS') ? vendedorFiltro : 'Ewerton';
+        const msgReativacao = `Olá ${c.nome}, tudo bem? Aqui é ${vendNome} da Aço Forte! Estamos com reposição de aço, telhas, forro PVC e ferragens com condições especiais hoje. Precisando de cotação, é só chamar por aqui!`;
 
         return `
           <tr>
@@ -4093,46 +4495,58 @@
             <td>${badgeRec}</td>
             <td style="display:flex;gap:6px;">
               <button type="button" class="kcard-btn kcard-btn-wpp" onclick="abrirWhatsAppDesktop('${escaparHTML(c.telefone)}', '${escaparHTML(c.nome)}', '${escaparHTML(msgReativacao)}', 'REATIVAÇÃO')">💬 WhatsApp</button>
-              <button type="button" class="kcard-btn kcard-btn-move" onclick="abrirModalNovoNegocio('${escaparHTML(c.nome)}', '${escaparHTML(c.codigo === '-' ? '' : c.codigo)}', '${escaparHTML(c.telefone)}')">+ Orçamento</button>
+              <button type="button" class="kcard-btn kcard-btn-move" onclick="abrirModalNovoNegocio('${escaparHTML(c.nome)}', '${escaparHTML(c.codigo)}', '${escaparHTML(c.telefone)}')">+ Cotação</button>
             </td>
           </tr>
         `;
       }).join('');
 
-      // Renderizar Radar Follow-up (ordenado do mais antigo para o mais recente)
-      const abertasOrdenadas = [...abertas].sort((a, b) => (a.data || '').localeCompare(b.data || ''));
-      document.getElementById('tbody-crm-propostas').innerHTML = abertasOrdenadas.map(p => {
-        const dias = calcularDiasEmAberto(p.data);
-        const tagDias = dias >= 3
-          ? `<span class="badge-atraso-sla">⏰ ${dias} dia(s) parado</span>`
-          : `<span class="status-recencia rec-ativo">${dias === 0 ? 'Hoje' : dias + ' dia(s)'}</span>`;
-        const msgWpp = `Olá ${p.cliente}, aqui é ${p.vendedor} da Aço Forte! Passando para saber se conseguiu analisar nosso orçamento de ${p.categoria || 'materiais'} (${formatarMoeda(p.valor)}).`;
+      // ================= AGENDA DE TAREFAS & FOLLOW-UP =================
+      const abertasOrdenadas = [...abertas].sort((a, b) => {
+        const dtA = a.proxima_acao_data ? `${a.proxima_acao_data} ${a.proxima_acao_hora || '09:00'}` : '0000-00-00 00:00';
+        const dtB = b.proxima_acao_data ? `${b.proxima_acao_data} ${b.proxima_acao_hora || '09:00'}` : '0000-00-00 00:00';
+        return dtA.localeCompare(dtB);
+      });
 
-        return `
-          <tr>
-            <td>${tagDias}</td>
-            <td><strong>${escaparHTML(p.vendedor)}</strong></td>
-            <td><a href="javascript:void(0)" onclick="abrirDrawerNegocio(${p.id})" style="font-weight:800;color:#18181b;">${escaparHTML(p.cliente)}</a></td>
-            <td>${escaparHTML(p.temperatura || 'MORNO')}</td>
-            <td>${escaparHTML(p.etapa_kanban)}</td>
-            <td class="num"><strong>${formatarMoeda(p.valor)}</strong></td>
-            <td style="display:flex;gap:6px;">
-              <button type="button" class="kcard-btn kcard-btn-wpp" onclick="abrirWhatsAppDesktop('${escaparHTML(p.telefone || '')}', '${escaparHTML(p.cliente)}', '${escaparHTML(msgWpp)}', 'FOLLOW-UP')">💬 Cobrar WhatsApp</button>
-              <button type="button" class="kcard-btn kcard-btn-move" onclick="moverEtapaKanban(${p.id}, 'FECHAMENTO')">Fechar Venda ✓</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
+      document.getElementById('tbody-crm-propostas').innerHTML = abertasOrdenadas.length
+        ? abertasOrdenadas.map(p => {
+            const semAcao = !p.proxima_acao || !p.proxima_acao_data;
+            const atrasada = !semAcao && p.proxima_acao_data < hojeStr;
+            const hojeT = !semAcao && p.proxima_acao_data === hojeStr;
+
+            let prazoHtml = `<span class="badge-atraso-sla">⚠️ Sem próxima ação</span>`;
+            if (!semAcao) {
+              const cls = atrasada ? 'tarefa-tag-atraso' : (hojeT ? 'tarefa-tag-hoje' : 'tarefa-tag-futura');
+              prazoHtml = `<span class="${cls}">${formatarDataBR(p.proxima_acao_data)} às ${escaparHTML(p.proxima_acao_hora || '09:00')}</span>`;
+            }
+
+            const msgCobrar = `Olá ${p.cliente}, aqui é ${p.vendedor} da Aço Forte! Passando para saber se conseguiu analisar nosso orçamento${p.orcamento_og1 ? ' #' + p.orcamento_og1 : ''} de ${normalizarCategoriaProduto(p.categoria)} (${formatarMoeda(p.valor)}).`;
+            return `
+              <tr>
+                <td>${prazoHtml}</td>
+                <td><strong>${escaparHTML(p.vendedor)}</strong></td>
+                <td>
+                  <strong style="cursor:pointer;text-decoration:underline;" onclick="abrirDrawerNegocio(${p.id})">${escaparHTML(p.cliente)}</strong>
+                  ${p.orcamento_og1 ? `<br/><span class="badge-og1-num">OG1 #${escaparHTML(p.orcamento_og1)}</span>` : ''}
+                </td>
+                <td>${semAcao ? '<em style="color:#b91c1c;">Nenhuma ação definida</em>' : escaparHTML(p.proxima_acao)}</td>
+                <td class="num"><strong>${formatarMoeda(p.valor)}</strong></td>
+                <td style="display:flex;gap:5px;flex-wrap:wrap;">
+                  <button type="button" class="kcard-btn kcard-btn-wpp" onclick="abrirWhatsAppDesktop('${escaparHTML(p.telefone || '')}', '${escaparHTML(p.cliente)}', '${escaparHTML(msgCobrar)}', 'FOLLOW-UP')">💬 Cobrar</button>
+                  <button type="button" class="kcard-btn kcard-btn-move" onclick="concluirTarefaNegocio(${p.id}, true)">✓ Concluir</button>
+                  <button type="button" class="kcard-btn kcard-btn-move" onclick="reagendarTarefaAmanha(${p.id})">🔁 Amanhã</button>
+                  <button type="button" class="kcard-btn kcard-btn-move" style="background:#dbeafe;color:#1e40af;" onclick="moverEtapaKanban(${p.id}, 'FECHAMENTO')">Fechar ✓</button>
+                </td>
+              </tr>
+            `;
+          }).join('')
+        : `<tr><td colspan="6" style="text-align:center;color:#78716c;">Nenhum orçamento em aberto no momento.</td></tr>`;
     }
 
-    inicializarDados();
-
-    // ================= PWA (SERVICE WORKER & INSTALAÇÃO) =================
+    // ================= SERVICE WORKER E INSTALAÇÃO PWA =================
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => {
-          console.warn('Falha ao registrar Service Worker:', err);
-        });
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
       });
     }
 
@@ -4153,9 +4567,7 @@
       btnInstalarPwa.style.display = 'none';
     });
 
-    window.addEventListener('appinstalled', () => {
-      btnInstalarPwa.style.display = 'none';
-    });
+    inicializarDados();
   </script>
 </body>
 </html>
