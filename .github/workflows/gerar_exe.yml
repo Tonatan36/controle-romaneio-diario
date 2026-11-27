@@ -1,0 +1,37 @@
+name: Compilar Robo OG1 para Windows (.exe)
+
+on:
+  push:
+    paths:
+      - 'robo_og1_crm.py'
+      - 'requirements.txt'
+      - '.github/workflows/gerar_exe.yml'
+  workflow_dispatch:
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+
+    steps:
+      - name: Baixar codigo do repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python no Windows
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar bibliotecas e PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Gerar Robo_OG1_CRM.exe
+        run: |
+          pyinstaller --onefile --noconsole --name Robo_OG1_CRM robo_og1_crm.py
+
+      - name: Disponibilizar .exe para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Robo_OG1_CRM_Windows
+          path: dist/Robo_OG1_CRM.exe
